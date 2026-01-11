@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h1>Painel Administrativo</h1>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total de Produtos</h3>
+            <p class="stat-number">{{ total_products }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total de Usuários</h3>
+            <p class="stat-number">{{ total_users }}</p>
+        </div>
+    </div>
+
+    <div class="admin-menu">
+        <a href="{{ url_for('admin_products') }}" class="admin-menu-item">
+            <h3>📦 Gerenciar Produtos</h3>
+            <p>Adicionar, editar ou remover produtos do catálogo</p>
+        </a>
+
+        <a href="{{ url_for('admin_users') }}" class="admin-menu-item">
+            <h3>👥 Gerenciar Usuários</h3>
+            <p>Criar e gerenciar usuários do sistema</p>
+        </a>
+
+        <a href="{{ url_for('admin_config') }}" class="admin-menu-item">
+            <h3>⚙️ Configurações</h3>
+            <p>Configurar número do WhatsApp e outras opções</p>
+        </a>
+
+        <a href="{{ url_for('index') }}" class="admin-menu-item">
+            <h3>🏠 Ver Catálogo</h3>
+            <p>Visualizar o catálogo de produtos como cliente</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

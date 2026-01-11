@@ -1,0 +1,158 @@
+═══════════════════════════════════════════════════════════════
+  ESTRUTURA COMPLETA DO PROJETO
+═══════════════════════════════════════════════════════════════
+
+automa/
+│
+├── 📄 app.py                       # Aplicação Flask principal
+├── 📄 requirements.txt             # Dependências Python
+├── 📄 README.md                    # Documentação completa
+├── 📄 INSTALACAO.txt              # Guia de instalação
+├── 📄 .gitignore                  # Arquivos ignorados pelo Git
+│
+├── 📁 static/                     # Arquivos estáticos
+│   ├── 📁 css/
+│   │   └── 📄 style.css           # Estilos CSS responsivos
+│   │
+│   └── 📁 uploads/                # ⚠️ Imagens dos produtos (criado automaticamente)
+│
+└── 📁 templates/                  # Templates HTML
+    ├── 📄 base.html               # Template base (navbar, alerts)
+    ├── 📄 login.html              # Página de login
+    ├── 📄 index.html              # Catálogo de produtos (cliente)
+    │
+    └── 📁 admin/                  # Templates administrativos
+        ├── 📄 dashboard.html      # Dashboard principal
+        ├── 📄 products.html       # Lista de produtos
+        ├── 📄 add_product.html    # Adicionar produto
+        ├── 📄 edit_product.html   # Editar produto
+        ├── 📄 users.html          # Lista de usuários
+        ├── 📄 add_user.html       # Adicionar usuário
+        └── 📄 config.html         # Configurações (WhatsApp)
+
+═══════════════════════════════════════════════════════════════
+
+🗄️ ARQUIVOS GERADOS AUTOMATICAMENTE:
+
+Estes arquivos serão criados quando você rodar o sistema:
+
+├── 📄 pedidos.db                  # Banco de dados SQLite
+└── 📁 static/uploads/             # Pasta de uploads de imagens
+
+═══════════════════════════════════════════════════════════════
+
+🔗 ROTAS DISPONÍVEIS:
+
+PÚBLICAS:
+- /                                → Catálogo de produtos (requer login)
+- /login                           → Página de login
+- /logout                          → Sair do sistema
+
+API:
+- /api/search                      → Busca de produtos (fuzzy search)
+- /api/whatsapp-config            → Retorna número do WhatsApp
+
+ADMIN (requer login de admin):
+- /admin                           → Dashboard
+- /admin/products                  → Lista de produtos
+- /admin/products/add             → Adicionar produto
+- /admin/products/edit/<id>       → Editar produto
+- /admin/products/delete/<id>     → Excluir produto
+- /admin/users                     → Lista de usuários
+- /admin/users/add                → Adicionar usuário
+- /admin/users/delete/<id>        → Excluir usuário
+- /admin/config                    → Configurações
+
+═══════════════════════════════════════════════════════════════
+
+📊 BANCO DE DADOS (SQLite):
+
+TABELAS:
+1. user                            → Usuários do sistema
+   - id, username, password, is_admin, created_at
+
+2. product                         → Produtos do catálogo
+   - id, name, brand, description, image, created_at
+
+3. admin_config                    → Configurações
+   - id, whatsapp_number
+
+═══════════════════════════════════════════════════════════════
+
+🎨 FUNCIONALIDADES IMPLEMENTADAS:
+
+CLIENTE:
+✅ Login seguro
+✅ Catálogo responsivo
+✅ Busca fuzzy (busca inteligente)
+✅ Filtros por marca (checkboxes)
+✅ Botões +/- para quantidade
+✅ Input manual de quantidade
+✅ Modal de detalhes do produto
+✅ Carrinho lateral
+✅ Envio para WhatsApp
+✅ Limpeza automática do carrinho
+
+ADMIN:
+✅ Dashboard com estatísticas
+✅ CRUD completo de produtos
+✅ Upload de imagens
+✅ CRUD de usuários
+✅ Configuração WhatsApp
+✅ Interface intuitiva
+
+TÉCNICO:
+✅ Autenticação com hash de senhas
+✅ Proteção de rotas admin
+✅ Upload seguro de arquivos
+✅ Design 100% responsivo
+✅ Busca fuzzy com FuzzyWuzzy
+✅ SQLAlchemy ORM
+
+═══════════════════════════════════════════════════════════════
+
+💻 TECNOLOGIAS:
+
+Backend:
+- Python 3.8+
+- Flask 3.0.0
+- Flask-SQLAlchemy 3.1.1
+- Werkzeug 3.0.1
+- FuzzyWuzzy 0.18.0
+- python-Levenshtein 0.23.0
+
+Frontend:
+- HTML5
+- CSS3 (Grid, Flexbox)
+- JavaScript (Vanilla)
+
+Banco de Dados:
+- SQLite 3
+
+═══════════════════════════════════════════════════════════════
+
+🎯 FLUXO DE USO:
+
+1. INSTALAÇÃO
+   └─→ pip install -r requirements.txt
+
+2. EXECUÇÃO
+   └─→ python app.py
+
+3. ACESSO ADMIN
+   └─→ Login: admin / admin123
+       └─→ Configurar WhatsApp
+       └─→ Criar usuários
+       └─→ Cadastrar produtos
+
+4. ACESSO CLIENTE
+   └─→ Login com credenciais fornecidas
+       └─→ Buscar produtos
+       └─→ Adicionar ao carrinho
+       └─→ Enviar pedido via WhatsApp
+
+═══════════════════════════════════════════════════════════════
+
+💰 CUSTO: R$ 0,00 (TOTALMENTE GRATUITO)
+
+═══════════════════════════════════════════════════════════════

@@ -1,0 +1,82 @@
+═══════════════════════════════════════════════════════════════
+  GUIA RÁPIDO DE INSTALAÇÃO - SISTEMA DE PEDIDOS B2B
+═══════════════════════════════════════════════════════════════
+
+📋 REQUISITOS:
+- Python 3.8 ou superior
+- Conexão com internet (para instalar dependências)
+
+═══════════════════════════════════════════════════════════════
+
+🚀 PASSO A PASSO:
+
+1️⃣ INSTALAR PYTHON
+   - Baixe em: https://www.python.org/downloads/
+   - Marque a opção "Add Python to PATH" durante instalação
+   - Reinicie o computador após instalação
+
+2️⃣ ABRIR TERMINAL NA PASTA DO PROJETO
+   - Windows: Shift + Botão Direito na pasta → "Abrir janela de comando aqui"
+   - Ou digite "cmd" na barra de endereços da pasta
+
+3️⃣ INSTALAR DEPENDÊNCIAS
+   Execute no terminal:
+
+   pip install -r requirements.txt
+
+4️⃣ EXECUTAR O SISTEMA
+   Execute no terminal:
+
+   python app.py
+
+5️⃣ ACESSAR O SISTEMA
+   Abra o navegador e acesse:
+
+   http://localhost:5000
+
+═══════════════════════════════════════════════════════════════
+
+🔐 PRIMEIRO ACESSO (ADMIN):
+
+   Usuário: admin
+   Senha: admin123
+
+═══════════════════════════════════════════════════════════════
+
+⚙️ CONFIGURAÇÃO INICIAL:
+
+1. Acesse o painel admin
+2. Vá em "Configurações"
+3. Configure o número do WhatsApp (ex: 5511999999999)
+4. Crie usuários para seus clientes
+5. Cadastre os produtos
+
+═══════════════════════════════════════════════════════════════
+
+❓ PROBLEMAS COMUNS:
+
+Erro: "pip não é reconhecido"
+→ Python não está no PATH. Reinstale marcando "Add to PATH"
+
+Erro: "Port already in use"
+→ Já tem algo rodando na porta 5000
+→ Mude a porta em app.py: app.run(debug=True, port=5001)
+
+Erro ao instalar dependências
+→ Execute: python -m pip install --upgrade pip
+→ Depois: pip install -r requirements.txt
+
+WhatsApp não abre
+→ Verifique o formato do número: 5511999999999
+→ 55 (país) + 11 (DDD) + 999999999 (número)
+
+═══════════════════════════════════════════════════════════════
+
+💰 CUSTO TOTAL: R$ 0,00 (100% GRATUITO)
+
+═══════════════════════════════════════════════════════════════
+
+📞 DÚVIDAS?
+Leia o README.md para documentação completa.
+
+═══════════════════════════════════════════════════════════════

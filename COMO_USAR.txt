@@ -1,0 +1,309 @@
+═══════════════════════════════════════════════════════════════
+  GUIA DE USO - SISTEMA DE PEDIDOS B2B
+═══════════════════════════════════════════════════════════════
+
+🎯 VISÃO GERAL:
+
+Este sistema permite que clientes façam pedidos via catálogo web e
+enviem automaticamente para o WhatsApp da empresa.
+
+═══════════════════════════════════════════════════════════════
+
+👔 PARTE 1: ADMINISTRADOR
+
+═══════════════════════════════════════════════════════════════
+
+📝 PASSO A PASSO INICIAL:
+
+1️⃣ PRIMEIRO ACESSO
+   - Abra: http://localhost:5000
+   - Login: admin
+   - Senha: admin123
+   - Você será levado ao painel admin automaticamente
+
+2️⃣ CONFIGURAR WHATSAPP
+   - No painel admin, clique em "⚙️ Configurações"
+   - Digite o número do WhatsApp da empresa
+   - Formato: 5511999999999
+     └─ 55 = Brasil
+     └─ 11 = DDD
+     └─ 999999999 = Número
+   - Clique em "Salvar Configurações"
+
+3️⃣ CRIAR USUÁRIOS
+   - Volte ao Dashboard
+   - Clique em "👥 Gerenciar Usuários"
+   - Clique em "+ Adicionar Usuário"
+   - Digite o nome de usuário (ex: joao)
+   - Digite a senha
+   - Clique em "Criar Usuário"
+   - Anote e envie as credenciais para o cliente
+
+4️⃣ CADASTRAR PRODUTOS
+   - Volte ao Dashboard
+   - Clique em "📦 Gerenciar Produtos"
+   - Clique em "+ Adicionar Produto"
+
+   Preencha:
+   - Nome do Produto: ex: "Parafuso M8 x 50mm"
+   - Marca: ex: "3M"
+   - Descrição: Detalhes do produto
+   - Imagem: Clique em "Escolher arquivo" e selecione a foto
+
+   - Clique em "Cadastrar Produto"
+
+5️⃣ REPETIR PARA TODOS OS PRODUTOS
+   - Cadastre todos os produtos do catálogo
+   - Você pode editar ou excluir produtos depois
+
+═══════════════════════════════════════════════════════════════
+
+🛠️ GERENCIAMENTO DE PRODUTOS:
+
+EDITAR UM PRODUTO:
+   - Gerenciar Produtos
+   - Clique em "Editar" no produto desejado
+   - Faça as alterações
+   - Clique em "Salvar Alterações"
+
+EXCLUIR UM PRODUTO:
+   - Gerenciar Produtos
+   - Clique em "Excluir" no produto desejado
+   - Confirme a exclusão
+
+═══════════════════════════════════════════════════════════════
+
+👥 GERENCIAMENTO DE USUÁRIOS:
+
+CRIAR NOVO CLIENTE:
+   - Gerenciar Usuários
+   - Adicionar Usuário
+   - Criar login e senha
+   - Enviar credenciais para o cliente
+
+EXCLUIR CLIENTE:
+   - Gerenciar Usuários
+   - Clique em "Excluir" no usuário
+   - Confirme a exclusão
+
+⚠️ Você não pode excluir administradores!
+
+═══════════════════════════════════════════════════════════════
+
+📊 VER CATÁLOGO COMO CLIENTE:
+
+   - No Dashboard, clique em "🏠 Ver Catálogo"
+   - Você verá a mesma tela que os clientes veem
+   - Útil para testar o sistema
+
+═══════════════════════════════════════════════════════════════
+
+👤 PARTE 2: CLIENTE (USUÁRIO FINAL)
+
+═══════════════════════════════════════════════════════════════
+
+🛒 FAZER UM PEDIDO:
+
+1️⃣ LOGIN
+   - Acesse: http://localhost:5000
+   - Digite seu usuário e senha fornecidos pela empresa
+   - Clique em "Entrar"
+
+2️⃣ NAVEGAR NO CATÁLOGO
+   - Você verá todos os produtos disponíveis
+   - Cada produto mostra: foto, nome e marca
+
+3️⃣ BUSCAR PRODUTOS
+   - Use a barra de busca no topo
+   - Digite qualquer parte do nome (não precisa ser exato)
+   - Exemplo: digitando "para" encontra "Parafuso"
+
+4️⃣ FILTRAR POR MARCA
+   - Marque as checkboxes das marcas desejadas
+   - Ex: Marque "3M" para ver só produtos 3M
+   - Pode selecionar múltiplas marcas
+   - Desmarque tudo para ver todos os produtos
+
+5️⃣ VER DETALHES DE UM PRODUTO
+   - Clique na FOTO do produto
+   - Abrirá um modal com descrição completa
+   - Clique no X para fechar
+
+6️⃣ ADICIONAR AO CARRINHO
+   Opção 1: Botões +/-
+   - Clique no botão + para adicionar unidade
+   - Clique no botão - para remover unidade
+
+   Opção 2: Digitar quantidade
+   - Clique no campo do meio
+   - Digite a quantidade desejada
+   - Ex: 100, 500, etc.
+
+7️⃣ VER CARRINHO
+   - Clique no botão flutuante 🛒 (canto inferior direito)
+   - Número vermelho mostra quantidade total de itens
+   - Carrinho abre lateralmente
+
+8️⃣ REVISAR PEDIDO
+   - No carrinho você vê:
+     └─ Nome de cada produto
+     └─ Quantidade de cada produto
+   - Para remover um item, clique no X ao lado dele
+
+9️⃣ ENVIAR PEDIDO
+   - Revise o pedido
+   - Clique em "Enviar Pedido via WhatsApp"
+   - O WhatsApp abrirá automaticamente
+   - Mensagem já formatada com todos os produtos
+   - Basta clicar em ENVIAR no WhatsApp
+   - Carrinho é limpo automaticamente
+
+🔟 FAZER NOVO PEDIDO
+   - Repita o processo
+   - Cada vez que clicar em "Enviar", o carrinho é zerado
+
+═══════════════════════════════════════════════════════════════
+
+💡 DICAS PARA CLIENTES:
+
+✅ Use a busca para encontrar produtos rapidamente
+✅ Você pode adicionar quantos produtos quiser ao carrinho
+✅ Revise bem antes de enviar (não dá para editar depois)
+✅ O carrinho não é salvo - se fechar o navegador, perde
+✅ Faça logout se for sair (botão "Sair" no topo)
+
+═══════════════════════════════════════════════════════════════
+
+📱 COMO O WHATSAPP FUNCIONA:
+
+FORMATO DA MENSAGEM:
+   *NOVO PEDIDO*
+
+   • Parafuso M8 x 50mm - Qtd: 100
+   • Porca Sextavada M8 - Qtd: 50
+   • Arruela Lisa M8 - Qtd: 200
+
+   Total de itens: 350
+
+IDENTIFICAÇÃO DO CLIENTE:
+   - O cliente é identificado pelo número do WhatsApp que enviou
+   - Não precisa pedir nome no checkout
+
+RECEBIMENTO:
+   - A empresa recebe no WhatsApp configurado
+   - Pode responder, processar, etc.
+
+═══════════════════════════════════════════════════════════════
+
+🎨 NAVEGAÇÃO NO SISTEMA:
+
+TELA DE LOGIN:
+   ┌─────────────────────────────┐
+   │   Sistema de Pedidos B2B    │
+   │                             │
+   │   Usuário: [___________]    │
+   │   Senha:   [___________]    │
+   │                             │
+   │      [ Entrar ]             │
+   └─────────────────────────────┘
+
+CATÁLOGO (CLIENTE):
+   ┌─────────────────────────────────────────┐
+   │ Pedidos B2B    Olá, João    [Sair]     │
+   ├─────────────────────────────────────────┤
+   │ Catálogo de Produtos                    │
+   │ [Buscar produtos..............]         │
+   │                                         │
+   │ Filtrar por Marca:                      │
+   │ ☐ 3M  ☐ Vonder  ☐ Tramontina          │
+   │                                         │
+   │ ┌─────┐ ┌─────┐ ┌─────┐               │
+   │ │foto │ │foto │ │foto │               │
+   │ │─────│ │─────│ │─────│               │
+   │ │Nome │ │Nome │ │Nome │               │
+   │ │3M   │ │3M   │ │3M   │               │
+   │ │[-][0][+]│[-][0][+]│[-][0][+]│       │
+   │ └─────┘ └─────┘ └─────┘               │
+   │                                         │
+   │                             ┌────┐     │
+   │                             │ 🛒 │     │
+   │                             │ 5  │     │
+   │                             └────┘     │
+   └─────────────────────────────────────────┘
+
+PAINEL ADMIN:
+   ┌─────────────────────────────────────────┐
+   │ Pedidos B2B    Olá, admin  [Sair]      │
+   ├─────────────────────────────────────────┤
+   │ Painel Administrativo                   │
+   │                                         │
+   │ ┌──────────────┐  ┌──────────────┐    │
+   │ │Total Produtos│  │Total Usuários│    │
+   │ │     15       │  │      3       │    │
+   │ └──────────────┘  └──────────────┘    │
+   │                                         │
+   │ ┌──────────────────────────────┐       │
+   │ │ 📦 Gerenciar Produtos        │       │
+   │ │ Adicionar, editar produtos   │       │
+   │ └──────────────────────────────┘       │
+   │                                         │
+   │ ┌──────────────────────────────┐       │
+   │ │ 👥 Gerenciar Usuários        │       │
+   │ │ Criar usuários do sistema    │       │
+   │ └──────────────────────────────┘       │
+   │                                         │
+   │ ┌──────────────────────────────┐       │
+   │ │ ⚙️ Configurações              │       │
+   │ │ Configurar WhatsApp          │       │
+   │ └──────────────────────────────┘       │
+   └─────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+
+❓ PERGUNTAS FREQUENTES:
+
+P: O sistema salva histórico de pedidos?
+R: Não, o foco é apenas enviar para WhatsApp. O histórico
+   fica no chat do WhatsApp.
+
+P: Posso mostrar preços?
+R: Atualmente não. O sistema foi feito para catálogo B2B
+   sem preços. Você pode adicionar essa funcionalidade depois.
+
+P: Posso ter mais de um admin?
+R: Sim, você pode criar outros admins modificando o código.
+
+P: Como faço backup?
+R: Copie o arquivo pedidos.db e a pasta static/uploads/
+
+P: Posso personalizar as cores?
+R: Sim, edite o arquivo static/css/style.css
+
+P: Funciona offline?
+R: Precisa de internet apenas para enviar para WhatsApp.
+   O catálogo funciona offline.
+
+P: Quantos produtos posso ter?
+R: Ilimitado (limitado pelo espaço em disco)
+
+P: Posso usar em celular?
+R: Sim! O sistema é 100% responsivo.
+
+═══════════════════════════════════════════════════════════════
+
+🎓 PRÓXIMOS PASSOS APÓS INSTALAÇÃO:
+
+1. ✅ Instalar sistema
+2. ✅ Acessar como admin
+3. ✅ Configurar WhatsApp
+4. ✅ Criar primeiro usuário
+5. ✅ Cadastrar produtos
+6. ✅ Testar fazendo um pedido
+7. ✅ Verificar se chegou no WhatsApp
+8. ✅ Liberar para os clientes
+
+═══════════════════════════════════════════════════════════════
+
+💰 CUSTO: R$ 0,00 - TOTALMENTE GRATUITO!
+
+═══════════════════════════════════════════════════════════════

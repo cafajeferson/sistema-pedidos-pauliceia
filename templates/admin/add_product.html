@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Adicionar Produto{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h1>Adicionar Novo Produto</h1>
+
+    <a href="{{ url_for('admin_products') }}" class="btn btn-outline mb-3">← Voltar</a>
+
+    <form method="POST" enctype="multipart/form-data" class="admin-form">
+        <div class="form-group">
+            <label for="name">Nome do Produto *</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="brand">Marca *</label>
+            <input type="text" id="brand" name="brand" required>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Descrição</label>
+            <textarea id="description" name="description" rows="5"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="image">Imagem do Produto</label>
+            <input type="file" id="image" name="image" accept="image/*">
+            <small>Formatos aceitos: JPG, PNG, GIF (Máx: 16MB)</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Cadastrar Produto</button>
+            <a href="{{ url_for('admin_products') }}" class="btn btn-outline">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

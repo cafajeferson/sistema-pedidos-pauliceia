@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}Catálogo de Produtos{% endblock %}
+
+{% block content %}
+<div class="catalog-header">
+    <h1>Catálogo de Produtos</h1>
+
+    <!-- Barra de busca -->
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Buscar produtos...">
+    </div>
+
+    <!-- Filtros por marca -->
+    <div class="filters">
+        <h3>Filtrar por Marca:</h3>
+        <div class="filter-checkboxes" id="brandFilters">
+            {% for brand in brands %}
+            <label class="checkbox-label">
+                <input type="checkbox" name="brand" value="{{ brand }}" class="brand-filter">
+                {{ brand }}
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Grid de produtos -->
+<div class="products-grid" id="productsGrid">
+    {% for product in products %}
+    <div class="product-card" data-id="{{ product.id }}" data-name="{{ product.name }}" data-brand="{{ product.brand }}">
+        <div class="product-image" onclick="openModal({{ product.id }})">
+            {% if product.image %}
+            <img src="{{ url_for('static', filename='uploads/' + product.image) }}" alt="{{ product.name }}">
+            {% else %}
+            <div class="no-image">Sem imagem</div>
+            {% endif %}
+        </div>
+        <div class="product-info">
+            <h3 class="product-name">{{ product.name }}</h3>
+            <p class="product-brand">{{ product.brand }}</p>
+        </div>
+        <div class="product-actions">
+            <button class="btn-qty btn-minus" onclick="changeQty({{ product.id }}, -1)">-</button>
+            <input type="number" id="qty-{{ product.id }}" value="0" min="0" class="qty-input"
+                   onchange="updateQty({{ product.id }}, this.value)">
+            <button class="btn-qty btn-plus" onclick="changeQty({{ product.id }}, 1)">+</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Botão flutuante do carrinho -->
+<button class="cart-float" id="cartButton" onclick="toggleCart()">
+    <span class="cart-icon">🛒</span>
+    <span class="cart-count" id="cartCount">0</span>
+</button>
+
+<!-- Carrinho lateral -->
+<div class="cart-sidebar" id="cartSidebar">
+    <div class="cart-header">
+        <h2>Carrinho</h2>
+        <button class="btn-close" onclick="toggleCart()">×</button>
+    </div>
+    <div class="cart-items" id="cartItems">
+        <p class="empty-cart">Carrinho vazio</p>
+    </div>
+    <div class="cart-footer" style="display: none;">
+        <button class="btn btn-primary btn-block" onclick="sendToWhatsApp()">
+            📱 Enviar Pedido
+        </button>
+    </div>
+</div>
+
+<!-- Modal de detalhes do produto -->
+<div class="modal" id="productModal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+        <div id="modalBody">
+            <!-- Conteúdo carregado dinamicamente -->
+        </div>
+    </div>
+</div>
+
+<script>
+let cart = {};
+let products = {{ products_json | tojson }};
+let whatsappNumber = null;
+
+// Pré-carregar número do WhatsApp
+(async function loadWhatsAppConfig() {
+    try {
+        const response = await fetch('/api/whatsapp-config');
+        const config = await response.json();
+        whatsappNumber = config.number;
+    } catch (error) {
+        console.error('Erro ao carregar configuração do WhatsApp:', error);
+    }
+})();
+
+// Busca fuzzy
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    filterProducts();
+});
+
+// Filtros de marca
+document.querySelectorAll('.brand-filter').forEach(checkbox => {
+    checkbox.addEventListener('change', filterProducts);
+});
+
+function filterProducts() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const selectedBrands = Array.from(document.querySelectorAll('.brand-filter:checked'))
+        .map(cb => cb.value);
+
+    document.querySelectorAll('.product-card').forEach(card => {
+        const name = card.dataset.name.toLowerCase();
+        const brand = card.dataset.brand;
+
+        const matchesSearch = !searchTerm || name.includes(searchTerm);
+        const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(brand);
+
+        card.style.display = (matchesSearch && matchesBrand) ? 'block' : 'none';
+    });
+}
+
+function changeQty(productId, delta) {
+    const input = document.getElementById(`qty-${productId}`);
+    let newValue = parseInt(input.value) + delta;
+    if (newValue < 0) newValue = 0;
+    input.value = newValue;
+    updateQty(productId, newValue);
+}
+
+function updateQty(productId, qty) {
+    qty = parseInt(qty);
+    if (qty < 0) qty = 0;
+
+    if (qty === 0) {
+        delete cart[productId];
+    } else {
+        const card = document.querySelector(`[data-id="${productId}"]`);
+        cart[productId] = {
+            name: card.dataset.name,
+            qty: qty
+        };
+    }
+
+    updateCartDisplay();
+}
+
+function updateCartDisplay() {
+    const cartItems = document.getElementById('cartItems');
+    const cartCount = document.getElementById('cartCount');
+    const cartFooter = document.querySelector('.cart-footer');
+
+    const hasItems = Object.keys(cart).length > 0;
+
+    // PRIMEIRA COISA: Mostrar/esconder botão INSTANTANEAMENTE
+    if (hasItems) {
+        cartFooter.style.display = 'block';
+        cartFooter.style.opacity = '1';
+        cartFooter.style.visibility = 'visible';
+    } else {
+        cartFooter.style.display = 'none';
+    }
+
+    // DEPOIS: Atualizar contador
+    const totalItems = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
+    cartCount.textContent = totalItems;
+
+    // POR ÚLTIMO: Atualizar lista de itens
+    if (!hasItems) {
+        cartItems.innerHTML = '<p class="empty-cart">Carrinho vazio</p>';
+        return;
+    }
+
+    // Montar HTML de forma otimizada
+    const items = Object.entries(cart).map(([id, item]) => `
+        <div class="cart-item">
+            <div class="cart-item-info">
+                <strong>${item.name}</strong>
+                <span>Quantidade: ${item.qty}</span>
+            </div>
+            <button class="btn-remove" onclick="removeFromCart(${id})">×</button>
+        </div>
+    `).join('');
+
+    cartItems.innerHTML = `<div class="cart-list">${items}</div>`;
+}
+
+function removeFromCart(productId) {
+    delete cart[productId];
+    document.getElementById(`qty-${productId}`).value = 0;
+    updateCartDisplay();
+}
+
+function toggleCart() {
+    const sidebar = document.getElementById('cartSidebar');
+    sidebar.classList.toggle('active');
+}
+
+function sendToWhatsApp() {
+    if (Object.keys(cart).length === 0) {
+        alert('Carrinho vazio! Adicione produtos antes de enviar.');
+        return;
+    }
+
+    if (!whatsappNumber) {
+        alert('Número do WhatsApp não configurado. Entre em contato com o administrador.');
+        return;
+    }
+
+    // Pegar nome do usuário da sessão
+    const username = '{{ session.get("username", "Cliente") }}';
+
+    // Montar mensagem
+    let message = `Pedido - ${username}\n\n`;
+
+    for (let [id, item] of Object.entries(cart)) {
+        message += `${item.name} - ${item.qty}un\n`;
+    }
+
+    // Redirecionar para WhatsApp
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+
+    // Limpar carrinho
+    cart = {};
+    document.querySelectorAll('.qty-input').forEach(input => input.value = 0);
+    updateCartDisplay();
+
+    toggleCart();
+}
+
+function openModal(productId) {
+    const product = products.find(p => p.id === productId);
+    const modal = document.getElementById('productModal');
+    const modalBody = document.getElementById('modalBody');
+
+    modalBody.innerHTML = `
+        <div class="modal-product">
+            ${product.image ? `<img src="/static/uploads/${product.image}" alt="${product.name}">` : '<div class="no-image">Sem imagem</div>'}
+            <h2>${product.name}</h2>
+            <p class="product-brand"><strong>Marca:</strong> ${product.brand}</p>
+            <div class="product-description">
+                <h3>Descrição:</h3>
+                <p>${product.description || 'Sem descrição disponível'}</p>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('productModal').style.display = 'none';
+}
+
+// Fechar modal ao clicar fora
+window.onclick = function(event) {
+    const modal = document.getElementById('productModal');
+    if (event.target === modal) {
+        closeModal();
+    }
+}
+</script>
+
+{% endblock %}

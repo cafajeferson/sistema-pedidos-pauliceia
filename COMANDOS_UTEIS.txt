@@ -1,0 +1,198 @@
+═══════════════════════════════════════════════════════════════
+  COMANDOS ÚTEIS - SISTEMA DE PEDIDOS B2B
+═══════════════════════════════════════════════════════════════
+
+📋 INSTALAÇÃO E EXECUÇÃO:
+
+1. Instalar dependências:
+   pip install -r requirements.txt
+
+2. Executar o sistema:
+   python app.py
+
+   Ou simplesmente clique duas vezes em:
+   INICIAR.bat
+
+3. Criar dados de exemplo:
+   python populate_sample_data.py
+
+   Ou clique duas vezes em:
+   CRIAR_DADOS_EXEMPLO.bat
+
+═══════════════════════════════════════════════════════════════
+
+🌐 ACESSAR O SISTEMA:
+
+- Navegador: http://localhost:5000
+- Admin: http://localhost:5000/admin
+
+═══════════════════════════════════════════════════════════════
+
+🔐 CREDENCIAIS PADRÃO:
+
+Admin:
+- Usuário: admin
+- Senha: admin123
+
+Clientes de exemplo (após rodar populate_sample_data.py):
+- cliente1 / 123456
+- cliente2 / 123456
+- joao / senha123
+
+═══════════════════════════════════════════════════════════════
+
+🛠️ MANUTENÇÃO:
+
+Resetar senha do admin:
+1. Abra o Python:
+   python
+
+2. Execute:
+   from app import app, db, User
+   from werkzeug.security import generate_password_hash
+
+   with app.app_context():
+       admin = User.query.filter_by(username='admin').first()
+       admin.password = generate_password_hash('nova_senha')
+       db.session.commit()
+       print('Senha alterada!')
+
+3. Sair do Python:
+   exit()
+
+═══════════════════════════════════════════════════════════════
+
+🗑️ RESETAR BANCO DE DADOS:
+
+⚠️ CUIDADO: Isso apaga TODOS os dados!
+
+1. Feche o servidor (Ctrl+C)
+2. Delete o arquivo: pedidos.db
+3. Inicie o servidor novamente: python app.py
+4. Um novo banco será criado automaticamente
+
+═══════════════════════════════════════════════════════════════
+
+📦 BACKUP DO SISTEMA:
+
+Arquivos importantes para backup:
+1. pedidos.db (banco de dados)
+2. static/uploads/ (imagens dos produtos)
+
+Como fazer backup:
+- Copie esses arquivos/pastas para um local seguro
+- Para restaurar, apenas cole de volta
+
+═══════════════════════════════════════════════════════════════
+
+🔧 ATUALIZAR DEPENDÊNCIAS:
+
+pip install --upgrade -r requirements.txt
+
+═══════════════════════════════════════════════════════════════
+
+🐛 RESOLVER PROBLEMAS COMUNS:
+
+Erro: "pip não é reconhecido"
+→ Reinstale Python marcando "Add to PATH"
+
+Erro: "Port 5000 already in use"
+→ Edite app.py e mude a porta:
+  app.run(debug=True, port=5001)
+
+Erro: "ModuleNotFoundError"
+→ Execute: pip install -r requirements.txt
+
+WhatsApp não funciona:
+→ Verifique o número em Admin > Configurações
+→ Formato: 5511999999999 (sem espaços ou caracteres)
+
+Upload não funciona:
+→ Verifique se a pasta static/uploads existe
+→ Se não existir, crie manualmente
+
+═══════════════════════════════════════════════════════════════
+
+📱 TESTAR WHATSAPP:
+
+1. Configure o número em: Admin > Configurações
+2. Formato: código do país + DDD + número
+   Exemplo: 5511987654321
+
+3. Teste manual abrindo no navegador:
+   https://wa.me/5511987654321?text=Teste
+
+═══════════════════════════════════════════════════════════════
+
+🚀 EXECUTAR EM REDE LOCAL:
+
+Para permitir acesso de outros computadores:
+
+Edite app.py, linha final:
+app.run(debug=True, host='0.0.0.0', port=5000)
+
+Outros computadores acessam pelo IP:
+http://192.168.1.XXX:5000
+
+Para descobrir seu IP:
+ipconfig (Windows)
+
+⚠️ Desabilite isso em produção por segurança!
+
+═══════════════════════════════════════════════════════════════
+
+📊 VER LOGS DO SISTEMA:
+
+Os logs aparecem no terminal onde o sistema está rodando.
+
+Para salvar logs em arquivo, execute:
+python app.py > logs.txt 2>&1
+
+═══════════════════════════════════════════════════════════════
+
+🔒 SEGURANÇA:
+
+IMPORTANTE antes de usar em produção:
+
+1. Mude a SECRET_KEY em app.py:
+   app.config['SECRET_KEY'] = 'sua-chave-super-secreta-aqui'
+
+2. Mude a senha do admin
+
+3. Use HTTPS (não HTTP)
+
+4. Desative o modo debug:
+   app.run(debug=False)
+
+═══════════════════════════════════════════════════════════════
+
+💡 DICAS:
+
+- Sempre faça backup antes de atualizar
+- Teste mudanças em uma cópia primeiro
+- Mantenha as senhas seguras
+- Documente personalizações que fizer
+- Atualize as dependências periodicamente
+
+═══════════════════════════════════════════════════════════════
+
+📞 ESTRUTURA DE ARQUIVOS:
+
+Essenciais (NÃO APAGUE):
+- app.py
+- requirements.txt
+- templates/
+- static/
+
+Gerados (podem ser recriados):
+- pedidos.db
+- static/uploads/
+- __pycache__/
+
+Opcionais (documentação):
+- README.md
+- INSTALACAO.txt
+- COMANDOS_UTEIS.txt
+- ESTRUTURA_PROJETO.txt
+
+═══════════════════════════════════════════════════════════════

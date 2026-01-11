@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Usuários{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1>Gerenciar Usuários</h1>
+        <a href="{{ url_for('admin_add_user') }}" class="btn btn-primary">+ Adicionar Usuário</a>
+    </div>
+
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline mb-3">← Voltar ao Dashboard</a>
+
+    {% if users %}
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Usuário</th>
+                    <th>Data de Criação</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>
+                        <a href="{{ url_for('admin_delete_user', id=user.id) }}"
+                           class="btn btn-sm btn-danger"
+                           onclick="return confirm('Tem certeza que deseja excluir este usuário?')">Excluir</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Nenhum usuário cadastrado ainda.</p>
+        <a href="{{ url_for('admin_add_user') }}" class="btn btn-primary">Adicionar Primeiro Usuário</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

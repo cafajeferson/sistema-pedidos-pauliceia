@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Configurações{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h1>Configurações do Sistema</h1>
+
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline mb-3">← Voltar ao Dashboard</a>
+
+    <form method="POST" class="admin-form">
+        <div class="form-group">
+            <label for="whatsapp_number">Número do WhatsApp *</label>
+            <input type="text" id="whatsapp_number" name="whatsapp_number"
+                   value="{{ config.whatsapp_number if config else '' }}"
+                   placeholder="5511999999999" required>
+            <small>Formato: Código do país + DDD + Número (ex: 5511999999999)</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Salvar Configurações</button>
+        </div>
+    </form>
+
+    <div class="info-box">
+        <h3>ℹ️ Informações Importantes:</h3>
+        <ul>
+            <li>O número do WhatsApp é usado para receber os pedidos dos clientes</li>
+            <li>Formato correto: código do país (55) + DDD + número (sem espaços ou caracteres especiais)</li>
+            <li>Exemplo: 5511987654321</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
