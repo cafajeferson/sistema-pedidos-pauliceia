@@ -30,6 +30,7 @@
                 <tr>
                     <th>ID</th>
                     <th>Nome</th>
+                    <th class="desc-column">Descricao</th>
                     <th>Setor</th>
                     <th>Acoes</th>
                 </tr>
@@ -39,6 +40,7 @@
                 <tr data-nome="{{ (product.nome if product.nome is defined else product['nome'])|lower }}">
                     <td>{{ product.id if product.id is defined else product['id'] }}</td>
                     <td>{{ product.nome if product.nome is defined else product['nome'] }}</td>
+                    <td class="desc-column">{{ (product.descricao if product.descricao is defined else product.get('descricao', ''))[:50] }}{% if (product.descricao if product.descricao is defined else product.get('descricao', ''))|length > 50 %}...{% endif %}</td>
                     <td>{{ product.setor if product.setor is defined else product['setor'] }}</td>
                     <td>
                         <a href="{{ url_for('admin_edit_product', id=product.id if product.id is defined else product['id']) }}" class="btn btn-sm">Editar</a>

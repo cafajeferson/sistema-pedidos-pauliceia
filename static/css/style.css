@@ -1390,34 +1390,41 @@ body {
 
     /* Navbar compacto no mobile - tudo em linha */
     .navbar.navbar-compact .container {
-        flex-wrap: nowrap;
-        gap: 8px;
+        flex-wrap: wrap;
+        gap: 5px;
+        padding: 5px 10px;
+    }
+
+    .navbar.navbar-compact .nav-brand {
+        flex: 0 0 auto;
     }
 
     .navbar.navbar-compact .nav-menu {
         display: flex;
         flex-direction: row;
-        flex-wrap: nowrap;
-        gap: 5px;
+        flex-wrap: wrap;
+        gap: 4px;
         align-items: center;
+        justify-content: flex-end;
+        flex: 1;
     }
 
     .navbar.navbar-compact .user-info {
-        font-size: 10px;
-        max-width: 60px;
+        font-size: 9px;
+        max-width: 50px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
     .navbar.navbar-compact .btn-xs {
-        padding: 3px 6px;
-        font-size: 10px;
+        padding: 4px 8px;
+        font-size: 11px;
         white-space: nowrap;
     }
 
     .navbar.navbar-compact .categoria-badge {
-        font-size: 10px;
+        font-size: 9px;
         padding: 3px 6px;
     }
 
@@ -1500,11 +1507,17 @@ body {
 
     /* Navbar ainda mais compacto em telas pequenas */
     .navbar.navbar-compact {
-        padding: 5px 0;
+        padding: 4px 0;
     }
 
     .navbar.navbar-compact .container {
-        padding: 0 10px;
+        padding: 0 8px;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .navbar.navbar-compact .nav-menu {
+        gap: 3px;
     }
 
     .navbar.navbar-compact .user-info {
@@ -1512,13 +1525,13 @@ body {
     }
 
     .navbar.navbar-compact .categoria-badge {
-        font-size: 9px;
+        font-size: 8px;
         padding: 2px 5px;
     }
 
     .navbar.navbar-compact .btn-xs {
-        padding: 2px 5px;
-        font-size: 9px;
+        padding: 3px 6px;
+        font-size: 10px;
     }
 
     /* Busca ainda mais compacta */
@@ -1536,6 +1549,15 @@ body {
         min-width: 16px;
         height: 16px;
         font-size: 9px;
+    }
+}
+
+/* ========================================
+   COLUNA DESCRICAO - RESPONSIVO
+======================================== */
+@media (max-width: 768px) {
+    .desc-column {
+        display: none;
     }
 }
 
