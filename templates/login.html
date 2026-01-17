@@ -5,38 +5,175 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Pauliceia Tintas</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .modern-login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modern-login-page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("{{ url_for('static', filename='img/logo.png') }}") center/800px no-repeat;
+            opacity: 0.05;
+            pointer-events: none;
+        }
+
+        .modern-login-container {
+            width: 100%;
+            max-width: 450px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .modern-login-box {
+            background: white;
+            padding: 50px 45px;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 45px;
+        }
+
+        .logo-container img {
+            max-width: 240px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+            background: transparent;
+            mix-blend-mode: multiply;
+        }
+
+        .modern-form-group {
+            margin-bottom: 24px;
+        }
+
+        .modern-form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .modern-form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            background: #f9fafb;
+        }
+
+        .modern-form-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .modern-btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .modern-btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+
+        .modern-btn-login:active {
+            transform: translateY(0);
+        }
+
+        .modern-alert {
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            border: 1px solid;
+        }
+
+        .modern-alert.alert-danger {
+            background: #fef2f2;
+            color: #991b1b;
+            border-color: #fecaca;
+        }
+
+        .modern-alert.alert-success {
+            background: #f0fdf4;
+            color: #166534;
+            border-color: #bbf7d0;
+        }
+
+        @media (max-width: 480px) {
+            .modern-login-box {
+                padding: 40px 30px;
+            }
+
+            .logo-container img {
+                max-width: 180px;
+            }
+
+            .modern-login-page::before {
+                background-size: 500px;
+            }
+        }
+    </style>
 </head>
-<body class="login-page">
-    <div class="login-container">
-        <div class="login-box">
-            <div class="login-logo">
-                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="" onerror="this.style.display='none'">
+<body class="modern-login-page">
+    <div class="modern-login-container">
+        <div class="modern-login-box">
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Pauliceia Tintas">
             </div>
-            <h1>Pauliceia Tintas</h1>
-            <p class="login-subtitle">Sistema de Pedidos</p>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
+                    <div class="modern-alert alert-{{ category }}">
                         {{ message }}
                     </div>
                     {% endfor %}
                 {% endif %}
             {% endwith %}
 
-            <form method="POST" action="{{ url_for('login') }}" class="login-form">
-                <div class="form-group">
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="modern-form-group">
                     <label for="username">Usuário</label>
                     <input type="text" id="username" name="username" required autofocus>
                 </div>
 
-                <div class="form-group">
+                <div class="modern-form-group">
                     <label for="password">Senha</label>
                     <input type="password" id="password" name="password" required>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+                <button type="submit" class="modern-btn-login">Entrar</button>
             </form>
         </div>
     </div>

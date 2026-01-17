@@ -3,51 +3,40 @@
 {% block title %}Catálogo de Produtos{% endblock %}
 
 {% block content %}
-<div class="catalog-header">
-    <h1>Catálogo de Produtos</h1>
-
-    <!-- Barra de busca -->
-    <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Buscar produtos...">
-    </div>
-
-    <!-- Filtros por marca -->
-    <div class="filters">
-        <h3>Filtrar por Marca:</h3>
-        <div class="filter-checkboxes" id="brandFilters">
-            {% for brand in brands %}
-            <label class="checkbox-label">
-                <input type="checkbox" name="brand" value="{{ brand }}" class="brand-filter">
-                {{ brand }}
-            </label>
-            {% endfor %}
+<div class="catalog-header-compact">
+    <!-- Linha 1: Busca + Favoritos -->
+    <div class="search-favorites-row">
+        <div class="search-box-compact" style="flex: 1; max-width: 600px;">
+            <input type="text" id="searchInput" placeholder="Buscar produtos..." style="width: 100%; padding: 12px 15px; font-size: 16px;">
         </div>
+        <button class="btn-favorites-compact" id="btnFavorites" onclick="toggleFavoritesFilter()">
+            <span>⭐</span>
+            <span class="favorites-count" id="favoritesCount">0</span>
+        </button>
+        <button class="btn-favorites-compact" id="btnQueima" onclick="toggleQueimaFilter()" style="background: #ff6b35; margin-left: 8px;" title="Produtos em Queima de Estoque">
+            <span>🔥</span>
+            <span class="queima-count" id="queimaCount">0</span>
+        </button>
     </div>
 </div>
 
-<!-- Grid de produtos -->
-<div class="products-grid" id="productsGrid">
-    {% for product in products %}
-    <div class="product-card" data-id="{{ product.id }}" data-name="{{ product.name }}" data-brand="{{ product.brand }}">
-        <div class="product-image" onclick="openModal({{ product.id }})">
-            {% if product.image %}
-            <img src="{{ url_for('static', filename='uploads/' + product.image) }}" alt="{{ product.name }}">
-            {% else %}
-            <div class="no-image">Sem imagem</div>
-            {% endif %}
-        </div>
-        <div class="product-info">
-            <h3 class="product-name">{{ product.name }}</h3>
-            <p class="product-brand">{{ product.brand }}</p>
-        </div>
-        <div class="product-actions">
-            <button class="btn-qty btn-minus" onclick="changeQty({{ product.id }}, -1)">-</button>
-            <input type="number" id="qty-{{ product.id }}" value="0" min="0" class="qty-input"
-                   onchange="updateQty({{ product.id }}, this.value)">
-            <button class="btn-qty btn-plus" onclick="changeQty({{ product.id }}, 1)">+</button>
-        </div>
-    </div>
-    {% endfor %}
+<!-- Mensagem inicial -->
+<div class="search-prompt search-prompt-compact" id="searchPrompt">
+    <div class="search-prompt-icon">🔍</div>
+    <p>Busque produtos, selecione uma marca ou clique em ⭐ para ver favoritos</p>
+</div>
+
+<!-- Grid de produtos (inicialmente vazio) -->
+<div class="products-grid" id="productsGrid" style="display: none;">
+</div>
+
+<!-- Paginação -->
+<div class="pagination" id="pagination" style="display: none;">
+</div>
+
+<!-- Mensagem quando não há resultados -->
+<div class="no-results" id="noResults" style="display: none;">
+    <p>Nenhum produto encontrado</p>
 </div>
 
 <!-- Botão flutuante do carrinho -->
@@ -86,9 +75,61 @@
 let cart = {};
 let products = {{ products_json | tojson }};
 let whatsappNumber = null;
+let favorites = JSON.parse(localStorage.getItem('favorites_{{ session.get("categoria_loja", "") }}') || '[]');
+let showingFavoritesOnly = false;
+let showingQueimaOnly = false;
+const PRODUCTS_PER_PAGE = 10;
+let currentPage = 1;
+let totalFilteredProducts = [];
 
-// Pré-carregar número do WhatsApp
-(async function loadWhatsAppConfig() {
+// DEBUG: Verificar se há produtos em queima
+console.log('Total de produtos carregados:', products.length);
+console.log('Produtos em queima:', products.filter(p => p.em_queima_estoque === true).length);
+console.log('Primeiros produtos:', products.slice(0, 3));
+
+// Função para calcular similaridade fuzzy entre duas strings (Levenshtein distance)
+function fuzzySimilarity(str1, str2) {
+    if (!str1 || !str2) return 0;
+    
+    str1 = str1.toLowerCase().trim();
+    str2 = str2.toLowerCase().trim();
+    
+    // Se uma string está contida na outra, score alto
+    if (str1.includes(str2) || str2.includes(str1)) {
+        return Math.max(str1.length, str2.length) / Math.min(str1.length, str2.length);
+    }
+    
+    const len1 = str1.length;
+    const len2 = str2.length;
+    const maxLen = Math.max(len1, len2);
+    
+    if (maxLen === 0) return 1.0;
+    
+    // Calcular distância de Levenshtein
+    const matrix = Array(len2 + 1).fill(null).map(() => Array(len1 + 1).fill(0));
+    
+    for (let i = 0; i <= len1; i++) matrix[0][i] = i;
+    for (let j = 0; j <= len2; j++) matrix[j][0] = j;
+    
+    for (let j = 1; j <= len2; j++) {
+        for (let i = 1; i <= len1; i++) {
+            const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+            matrix[j][i] = Math.min(
+                matrix[j][i - 1] + 1,
+                matrix[j - 1][i] + 1,
+                matrix[j - 1][i - 1] + indicator
+            );
+        }
+    }
+    
+    const distance = matrix[len2][len1];
+    const similarity = (maxLen - distance) / maxLen;
+    
+    return similarity;
+}
+
+// Pré-carregar número do WhatsApp e atualizar contador de favoritos
+(async function init() {
     try {
         const response = await fetch('/api/whatsapp-config');
         const config = await response.json();
@@ -96,32 +137,390 @@ let whatsappNumber = null;
     } catch (error) {
         console.error('Erro ao carregar configuração do WhatsApp:', error);
     }
+    updateFavoritesCount();
+    updateQueimaCount();
+    // Renderizar produtos na carga inicial
+    filterAndDisplayProducts();
 })();
 
-// Busca fuzzy
+function updateQueimaCount() {
+    const queimaCount = products.filter(p => p.em_queima_estoque).length;
+    document.getElementById('queimaCount').textContent = queimaCount;
+}
+
+function toggleQueimaFilter() {
+    showingQueimaOnly = !showingQueimaOnly;
+    showingFavoritesOnly = false; // Desativar filtro de favoritos
+    document.getElementById('btnQueima').style.opacity = showingQueimaOnly ? '1' : '0.6';
+    document.getElementById('btnFavorites').style.opacity = '0.6';
+    
+    // Limpar busca ao ativar filtro
+    if (showingQueimaOnly) {
+        document.getElementById('searchInput').value = '';
+    }
+    
+    currentPage = 1;
+    filterAndDisplayProducts();
+}
+
+// Busca com debounce para melhor performance
+let searchTimeout;
 document.getElementById('searchInput').addEventListener('input', function(e) {
-    filterProducts();
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        currentPage = 1; // Resetar para primeira página ao buscar
+        filterAndDisplayProducts();
+    }, 300);
 });
 
-// Filtros de marca
-document.querySelectorAll('.brand-filter').forEach(checkbox => {
-    checkbox.addEventListener('change', filterProducts);
-});
+// Função de busca melhorada - encontra produtos mesmo com palavras em ordem diferente
+function matchesSearchTerms(productName, productBrand, searchTerm) {
+    if (!searchTerm) return { matches: true, score: 0 };
 
-function filterProducts() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const selectedBrands = Array.from(document.querySelectorAll('.brand-filter:checked'))
-        .map(cb => cb.value);
+    const searchWords = searchTerm.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    const productText = (productName + ' ' + productBrand).toLowerCase();
+    const productWords = productText.split(/\s+/);
 
-    document.querySelectorAll('.product-card').forEach(card => {
-        const name = card.dataset.name.toLowerCase();
-        const brand = card.dataset.brand;
+    let matchCount = 0;
+    let totalScore = 0;
 
-        const matchesSearch = !searchTerm || name.includes(searchTerm);
-        const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(brand);
+    for (const searchWord of searchWords) {
+        let wordMatched = false;
 
-        card.style.display = (matchesSearch && matchesBrand) ? 'block' : 'none';
-    });
+        // Verificar se a palavra existe no texto do produto (substring completo)
+        for (const productWord of productWords) {
+            // Match exato de palavra
+            if (productWord === searchWord) {
+                wordMatched = true;
+                totalScore += 10;
+                break;
+            }
+            // Match no início da palavra (para "ve" em "verniz")
+            else if (productWord.startsWith(searchWord)) {
+                wordMatched = true;
+                totalScore += 5;
+                break;
+            }
+            // Match em qualquer posição (para "niz" em "verniz")
+            else if (productWord.includes(searchWord) && searchWord.length >= 2) {
+                wordMatched = true;
+                totalScore += 3;
+                break;
+            }
+        }
+
+        if (wordMatched) {
+            matchCount++;
+        }
+    }
+
+    // Basta UMA palavra fazer match (não precisa de todas)
+    const matches = matchCount > 0;
+
+    // Bonus por match no início do nome
+    if (matches && productName.toLowerCase().startsWith(searchWords[0])) {
+        totalScore += 20;
+    }
+
+    return { matches, score: totalScore };
+}
+
+function filterAndDisplayProducts() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+
+    const searchPrompt = document.getElementById('searchPrompt');
+    const productsGrid = document.getElementById('productsGrid');
+    const noResults = document.getElementById('noResults');
+    const pagination = document.getElementById('pagination');
+
+    // Ocultar prompt sempre (mostrar produtos)
+    searchPrompt.style.display = 'none';
+
+    // Filtrar produtos com busca melhorada
+    let filteredProducts = [];
+    let otherProducts = []; // Produtos não favoritos que correspondem à busca
+
+    for (const p of products) {
+        const searchResult = matchesSearchTerms(p.name, p.brand, searchTerm);
+        const isFavorite = favorites.includes(p.id);
+        const emQueima = p.em_queima_estoque;
+
+        // Se tem busca, prevalece a busca mesmo com filtro de queima
+        if (searchTerm) {
+            // Modo busca - ignora filtro de queima
+            if (searchResult.matches) {
+                if (showingFavoritesOnly) {
+                    if (isFavorite) {
+                        filteredProducts.push({ ...p, searchScore: searchResult.score, isFavoriteResult: true });
+                    } else {
+                        otherProducts.push({ ...p, searchScore: searchResult.score, isFavoriteResult: false });
+                    }
+                } else {
+                    filteredProducts.push({ ...p, searchScore: searchResult.score });
+                }
+            }
+        } else if (showingQueimaOnly) {
+            // Sem busca, mas filtrando por queima
+            if (emQueima) {
+                filteredProducts.push({ ...p, searchScore: 100 });
+            }
+        } else if (showingFavoritesOnly) {
+            // Sem busca, filtrando favoritos
+            if (isFavorite) {
+                filteredProducts.push({ ...p, searchScore: 100 });
+            }
+        } else {
+            // Sem busca e sem filtros - mostrar todos
+            filteredProducts.push({ ...p, searchScore: 0 });
+        }
+    }
+
+    // Ordenar por relevância (score maior primeiro)
+    if (searchTerm) {
+        filteredProducts.sort((a, b) => b.searchScore - a.searchScore);
+        otherProducts.sort((a, b) => b.searchScore - a.searchScore);
+    }
+
+    // Adicionar produtos relacionados (catalisadores) - funciona em ambos os modos
+    if (searchTerm) {
+        const allCurrentIds = [...filteredProducts.map(p => p.id), ...otherProducts.map(p => p.id)];
+
+        console.log('Buscando produtos relacionados para:', filteredProducts.length, 'produtos encontrados');
+
+        // Para cada produto encontrado, buscar o produto relacionado (catalisador)
+        [...filteredProducts, ...otherProducts].forEach(foundProduct => {
+            console.log('Verificando produto:', foundProduct.name, 'ID:', foundProduct.id, 'relacionado_id:', foundProduct.related_product_id);
+            
+            // Se este produto TEM um produto relacionado
+            if (foundProduct.related_product_id) {
+                const relatedProduct = products.find(p => p.id === foundProduct.related_product_id);
+                
+                if (relatedProduct && !allCurrentIds.includes(relatedProduct.id)) {
+                    console.log('Encontrado produto relacionado:', relatedProduct.name, 'do produto', foundProduct.name);
+                    const relatedCopy = { ...relatedProduct };
+                    relatedCopy.isRelated = true;
+                    relatedCopy.relatedTo = foundProduct.name;
+                    relatedCopy.isFavoriteResult = favorites.includes(relatedProduct.id);
+                    
+                    // Sempre adicionar produtos relacionados aos resultados principais
+                    filteredProducts.push(relatedCopy);
+                    allCurrentIds.push(relatedProduct.id);
+                }
+            }
+        });
+
+        console.log('Total de produtos após adicionar relacionados:', filteredProducts.length);
+    }
+
+    // Se está nos favoritos, tem busca, adiciona os outros produtos após os favoritos
+    if (showingFavoritesOnly && searchTerm && otherProducts.length > 0) {
+        filteredProducts = [...filteredProducts, ...otherProducts];
+    }
+
+    // Guardar produtos filtrados para paginação
+    totalFilteredProducts = filteredProducts;
+
+    if (filteredProducts.length === 0) {
+        productsGrid.style.display = 'none';
+        noResults.style.display = 'block';
+        pagination.style.display = 'none';
+        return;
+    }
+
+    // Calcular paginação
+    const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+
+    // Garantir que página atual é válida
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    // Obter produtos da página atual
+    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    const endIndex = startIndex + PRODUCTS_PER_PAGE;
+    const displayProducts = filteredProducts.slice(startIndex, endIndex);
+
+    noResults.style.display = 'none';
+    productsGrid.style.display = 'grid';
+
+    // Renderizar produtos com separador para "outros resultados" quando em modo favoritos
+    let html = '';
+    let showedOthersSeparator = false;
+
+    for (const p of displayProducts) {
+        // Se estamos nos favoritos e este produto não é favorito, mostrar separador
+        if (showingFavoritesOnly && searchTerm && p.isFavoriteResult === false && !showedOthersSeparator) {
+            html += `<div class="other-results-separator">
+                <span>Outros resultados encontrados</span>
+            </div>`;
+            showedOthersSeparator = true;
+        }
+        html += createProductCard(p);
+    }
+
+    productsGrid.innerHTML = html;
+
+    // Renderizar paginação
+    renderPagination(totalPages, filteredProducts.length);
+}
+
+function renderPagination(totalPages, totalItems) {
+    const pagination = document.getElementById('pagination');
+
+    if (totalPages <= 1) {
+        pagination.style.display = 'none';
+        return;
+    }
+
+    pagination.style.display = 'flex';
+
+    let html = '';
+
+    // Botão anterior
+    html += `<button class="pagination-btn ${currentPage === 1 ? 'disabled' : ''}"
+             onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+             ‹ Anterior
+             </button>`;
+
+    // Números das páginas
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    // Ajustar se estiver no final
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // Primeira página se não visível
+    if (startPage > 1) {
+        html += `<button class="pagination-btn" onclick="goToPage(1)">1</button>`;
+        if (startPage > 2) {
+            html += `<span class="pagination-ellipsis">...</span>`;
+        }
+    }
+
+    // Páginas visíveis
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}"
+                 onclick="goToPage(${i})">${i}</button>`;
+    }
+
+    // Última página se não visível
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            html += `<span class="pagination-ellipsis">...</span>`;
+        }
+        html += `<button class="pagination-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+    }
+
+    // Botão próximo
+    html += `<button class="pagination-btn ${currentPage === totalPages ? 'disabled' : ''}"
+             onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+             Próximo ›
+             </button>`;
+
+    // Info de total
+    const startItem = (currentPage - 1) * PRODUCTS_PER_PAGE + 1;
+    const endItem = Math.min(currentPage * PRODUCTS_PER_PAGE, totalItems);
+    html += `<span class="pagination-info">Mostrando ${startItem}-${endItem} de ${totalItems}</span>`;
+
+    pagination.innerHTML = html;
+}
+
+function goToPage(page) {
+    const totalPages = Math.ceil(totalFilteredProducts.length / PRODUCTS_PER_PAGE);
+    if (page < 1 || page > totalPages) return;
+
+    currentPage = page;
+    filterAndDisplayProducts();
+
+    // Rolar para o topo da grade de produtos
+    document.getElementById('productsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function createProductCard(product) {
+    const isFavorite = favorites.includes(product.id);
+    const currentQty = cart[product.id] ? cart[product.id].qty : 0;
+    const relatedBadge = product.isRelated ?
+        `<div class="related-badge">🔗 Catalisador de ${product.relatedTo}</div>` : '';
+    const queimaBadge = product.em_queima_estoque ?
+        `<div class="queima-badge">🔥 QUEIMA DE ESTOQUE 🔥</div>` : '';
+
+    return `
+        <div class="product-card ${product.em_queima_estoque ? 'product-card-queima' : ''}" data-id="${product.id}" data-name="${product.name}" data-brand="${product.brand}">
+            ${queimaBadge}
+            ${relatedBadge}
+            <button class="btn-favorite ${isFavorite ? 'active' : ''}" onclick="toggleFavorite(${product.id})" title="${isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}">
+                ${isFavorite ? '⭐' : '☆'}
+            </button>
+            <div class="product-image" onclick="openModal(${product.id})">
+                ${product.image ?
+                    `<img src="${product.image}" alt="${product.name}">` :
+                    '<div class="no-image">Sem imagem</div>'}
+            </div>
+            <div class="product-info">
+                <h3 class="product-name">${product.name}</h3>
+                <p class="product-brand">${product.brand}</p>
+                ${product.em_queima_estoque && product.preco_original && product.preco_queima ?
+                    `<div class="product-price-queima">
+                        <span class="price-original">R$ ${parseFloat(product.preco_original).toFixed(2)}</span>
+                        <span class="price-queima">R$ ${parseFloat(product.preco_queima).toFixed(2)}</span>
+                        <span class="price-discount">${Math.round((1 - product.preco_queima / product.preco_original) * 100)}% OFF</span>
+                    </div>` :
+                    ''
+                }
+            </div>
+            <div class="product-actions">
+                <button class="btn-qty btn-minus" onclick="changeQty(${product.id}, -1)">-</button>
+                <input type="number" id="qty-${product.id}" value="${currentQty}" min="0" class="qty-input"
+                       onchange="updateQty(${product.id}, this.value)">
+                <button class="btn-qty btn-plus" onclick="changeQty(${product.id}, 1)">+</button>
+            </div>
+        </div>
+    `;
+}
+
+function toggleFavorite(productId) {
+    const index = favorites.indexOf(productId);
+    if (index > -1) {
+        favorites.splice(index, 1);
+    } else {
+        favorites.push(productId);
+    }
+    localStorage.setItem('favorites_{{ session.get("categoria_loja", "") }}', JSON.stringify(favorites));
+    updateFavoritesCount();
+
+    // Atualizar visual do botão
+    const btn = document.querySelector(`[data-id="${productId}"] .btn-favorite`);
+    if (btn) {
+        btn.classList.toggle('active');
+        btn.innerHTML = favorites.includes(productId) ? '⭐' : '☆';
+    }
+
+    // Se estiver mostrando apenas favoritos, atualizar lista
+    if (showingFavoritesOnly) {
+        filterAndDisplayProducts();
+    }
+}
+
+function updateFavoritesCount() {
+    document.getElementById('favoritesCount').textContent = favorites.length;
+}
+
+function toggleFavoritesFilter() {
+    showingFavoritesOnly = !showingFavoritesOnly;
+    showingQueimaOnly = false; // Desativar filtro de queima
+    const btn = document.getElementById('btnFavorites');
+    btn.classList.toggle('active', showingFavoritesOnly);
+    document.getElementById('btnQueima').style.opacity = '0.6';
+
+    // Limpar busca ao ativar filtro
+    if (showingFavoritesOnly) {
+        document.getElementById('searchInput').value = '';
+    }
+
+    currentPage = 1; // Resetar para primeira página
+    filterAndDisplayProducts();
 }
 
 function changeQty(productId, delta) {
@@ -142,6 +541,7 @@ function updateQty(productId, qty) {
         const card = document.querySelector(`[data-id="${productId}"]`);
         cart[productId] = {
             name: card.dataset.name,
+            brand: card.dataset.brand,
             qty: qty
         };
     }
@@ -212,13 +612,26 @@ function sendToWhatsApp() {
     }
 
     // Pegar nome do usuário da sessão
-    const username = '{{ session.get("username", "Cliente") }}';
+    const username = '{{ session.get("username", "Cliente") }}'.toUpperCase();
 
-    // Montar mensagem
-    let message = `Pedido - ${username}\n\n`;
+    // Montar mensagem no formato: PEDIDO - NOME_DO_CLIENTE
+    let message = `PEDIDO - ${username}\n\n`;
 
     for (let [id, item] of Object.entries(cart)) {
-        message += `${item.name} - ${item.qty}un\n`;
+        const productName = item.name.toUpperCase();
+        
+        // Procurar o produto para verificar se está em queima e pegar o preço
+        const product = products.find(p => p.id == id);
+        
+        if (product && product.em_queima_estoque && product.preco_queima) {
+            // Produto em queima de estoque - mostrar preço
+            const preco = parseFloat(product.preco_queima).toFixed(2);
+            const precoTotal = (parseFloat(product.preco_queima) * item.qty).toFixed(2);
+            message += `- ${productName}  -  ${item.qty} unid  -  R$ ${preco} (Total: R$ ${precoTotal})\n\n`;
+        } else {
+            // Produto normal - sem preço
+            message += `- ${productName}  -  ${item.qty} unid\n\n`;
+        }
     }
 
     // Redirecionar para WhatsApp
@@ -240,7 +653,7 @@ function openModal(productId) {
 
     modalBody.innerHTML = `
         <div class="modal-product">
-            ${product.image ? `<img src="/static/uploads/${product.image}" alt="${product.name}">` : '<div class="no-image">Sem imagem</div>'}
+            ${product.image ? `<img src="${product.image}" alt="${product.name}">` : '<div class="no-image">Sem imagem</div>'}
             <h2>${product.name}</h2>
             <p class="product-brand"><strong>Marca:</strong> ${product.brand}</p>
             <div class="product-description">

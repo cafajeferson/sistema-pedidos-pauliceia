@@ -9,17 +9,28 @@
 </head>
 <body>
     {% if session.get('user_id') %}
-    <nav class="navbar">
+    <nav class="navbar navbar-compact">
         <div class="container">
             <div class="nav-brand">
-                <h2>Pauliceia Tintas</h2>
+                {% if session.get('categoria_loja') %}
+                    <span class="categoria-badge">
+                        {% if session.get('categoria_loja') == 'automotivo' %}
+                            🚗 Automotivo
+                        {% else %}
+                            🏠 Imobiliário
+                        {% endif %}
+                    </span>
+                {% endif %}
             </div>
             <div class="nav-menu">
-                <span class="user-info">Olá, {{ session.get('username') }}</span>
-                {% if session.get('is_admin') %}
-                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-sm">Admin</a>
+                <span class="user-info">{{ session.get('username') }}</span>
+                {% if session.get('categoria_loja') %}
+                    <a href="{{ url_for('trocar_setor') }}" class="btn btn-xs btn-outline">Setor</a>
                 {% endif %}
-                <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline">Sair</a>
+                {% if session.get('is_admin') %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-xs">Admin</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}" class="btn btn-xs btn-outline">Sair</a>
             </div>
         </div>
     </nav>

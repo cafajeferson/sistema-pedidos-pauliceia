@@ -8,33 +8,52 @@
 
     <a href="{{ url_for('admin_products') }}" class="btn btn-outline mb-3">← Voltar</a>
 
-    <form method="POST" enctype="multipart/form-data" class="admin-form">
+    <form method="POST" class="admin-form" enctype="multipart/form-data">
         <div class="form-group">
             <label for="name">Nome do Produto *</label>
-            <input type="text" id="name" name="name" value="{{ product.name }}" required>
+            <input type="text" id="name" name="name" value="{{ product.nome if product.nome is defined else product['nome'] }}" required>
+            <small>Nome base do produto</small>
         </div>
 
         <div class="form-group">
             <label for="brand">Marca *</label>
-            <input type="text" id="brand" name="brand" value="{{ product.brand }}" required>
+            <input type="text" id="brand" name="brand" value="{{ product.marca if product.marca is defined else product.get('marca', '') }}" placeholder="Ex: SHERWIN-WILLIAMS">
+            <small>Marca/fabricante do produto (não pode ser vazia)</small>
         </div>
 
         <div class="form-group">
-            <label for="description">Descrição</label>
-            <textarea id="description" name="description" rows="5">{{ product.description }}</textarea>
+            <label>Setor</label>
+            <input type="text" value="{{ product.setor if product.setor is defined else product['setor'] }}" disabled>
+            <small>O setor não pode ser alterado</small>
         </div>
 
         <div class="form-group">
-            <label for="image">Imagem do Produto</label>
-            {% if product.image %}
-            <div class="current-image">
-                <img src="{{ url_for('static', filename='uploads/' + product.image) }}"
-                     alt="{{ product.name }}" style="max-width: 200px;">
-                <p><small>Imagem atual</small></p>
-            </div>
+            <label for="image">Foto do Produto</label>
+            {% if product.imagem %}
+                <div style="margin-bottom: 10px;">
+                    <img src="/static/uploads/{{ product.imagem }}" alt="Imagem atual" style="max-width: 200px; border: 1px solid #ddd; padding: 4px;">
+                </div>
             {% endif %}
             <input type="file" id="image" name="image" accept="image/*">
-            <small>Deixe em branco para manter a imagem atual</small>
+            <small>Opcional: selecione uma nova foto para o produto</small>
+        </div>
+
+        <div class="form-group">
+            <label>Nome Completo (preview)</label>
+            <input type="text" id="preview" disabled style="background-color: #f0f0f0;">
+            <small>Este é o nome que será salvo</small>
+        </div>
+
+        <div class="form-group" style="position: relative;">
+            <label for="related_product">Produto Relacionado (Catalisador)</label>
+            <input type="text" id="related_product_search" name="related_product_search" 
+                   placeholder="Digite para buscar produto relacionado..." 
+                   autocomplete="off"
+                   value="{{ product.related_product_name if product.related_product_name is defined else '' }}">
+            <input type="hidden" id="related_product_id" name="related_product_id" 
+                   value="{{ product.produto_relacionado_id if product.produto_relacionado_id is defined else '' }}">
+            <div id="search_results" class="search-results-dropdown" style="display: none;"></div>
+            <small>Opcional: vincule um catalisador ou produto complementar</small>
         </div>
 
         <div class="form-actions">
@@ -42,5 +61,122 @@
             <a href="{{ url_for('admin_products') }}" class="btn btn-outline">Cancelar</a>
         </div>
     </form>
+
+    <style>
+        .search-results-dropdown {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            width: calc(100% - 2px);
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .search-result-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .search-result-item:hover {
+            background-color: #f5f5f5;
+        }
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+
+    <script>
+        function updatePreview() {
+            const nome = document.getElementById('name').value.trim();
+            const marca = document.getElementById('brand').value.trim();
+            const preview = document.getElementById('preview');
+            
+            if (nome && marca) {
+                preview.value = nome + ' ' + marca;
+            } else if (nome) {
+                preview.value = nome;
+            } else {
+                preview.value = '';
+            }
+        }
+        
+        document.getElementById('name').addEventListener('input', updatePreview);
+        document.getElementById('brand').addEventListener('input', updatePreview);
+        
+        // Atualizar preview ao carregar
+        updatePreview();
+
+        // Busca de produtos relacionados
+        let searchTimeout;
+        const searchInput = document.getElementById('related_product_search');
+        const searchResults = document.getElementById('search_results');
+        const hiddenInput = document.getElementById('related_product_id');
+        const currentProductId = {{ product.id if product.id is defined else 'null' }};
+
+        console.log('Sistema de busca inicializado');
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+
+            console.log('Digitado:', query);
+
+            if (query.length < 2) {
+                searchResults.style.display = 'none';
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const url = `/api/search-products?q=${encodeURIComponent(query)}${currentProductId ? '&exclude_id=' + currentProductId : ''}`;
+                    console.log('Buscando URL:', url);
+                    
+                    const response = await fetch(url);
+                    const products = await response.json();
+
+                    console.log('Produtos encontrados:', products.length);
+
+                    if (products.length === 0) {
+                        searchResults.innerHTML = '<div class="search-result-item">Nenhum produto encontrado</div>';
+                        searchResults.style.display = 'block';
+                        return;
+                    }
+
+                    searchResults.innerHTML = products.map(p => 
+                        `<div class="search-result-item" data-id="${p.id}" data-name="${p.name}">
+                            <strong>${p.name}</strong><br>
+                            <small>${p.brand || ''}</small>
+                        </div>`
+                    ).join('');
+                    searchResults.style.display = 'block';
+
+                    // Adicionar eventos de clique
+                    document.querySelectorAll('.search-result-item').forEach(item => {
+                        item.addEventListener('click', function() {
+                            const id = this.dataset.id;
+                            const name = this.dataset.name;
+                            searchInput.value = name;
+                            hiddenInput.value = id;
+                            searchResults.style.display = 'none';
+                            console.log('Produto selecionado:', name, 'ID:', id);
+                        });
+                    });
+                } catch (error) {
+                    console.error('Erro ao buscar produtos:', error);
+                    searchResults.innerHTML = '<div class="search-result-item" style="color: red;">Erro ao buscar produtos</div>';
+                    searchResults.style.display = 'block';
+                }
+            }, 300);
+        });
+
+        // Fechar dropdown ao clicar fora
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+    </script>
 </div>
 {% endblock %}

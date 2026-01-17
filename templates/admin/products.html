@@ -11,35 +11,38 @@
 
     <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline mb-3">← Voltar ao Dashboard</a>
 
+    <!-- Barra de busca -->
+    <div class="admin-search-box" style="margin-bottom: 20px;">
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="position: relative; flex: 1; max-width: 400px;">
+                <input type="text" id="searchProducts" placeholder="Buscar produto..."
+                       style="width: 100%; padding: 10px 40px 10px 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; color: #666;">🔍</span>
+            </div>
+            <span id="searchResultCount" style="color: #666; font-size: 14px;"></span>
+        </div>
+    </div>
+
     {% if products %}
     <div class="table-responsive">
-        <table class="admin-table">
+        <table class="admin-table" id="productsTable">
             <thead>
                 <tr>
-                    <th>Imagem</th>
+                    <th>ID</th>
                     <th>Nome</th>
-                    <th>Marca</th>
-                    <th>Descrição</th>
-                    <th>Ações</th>
+                    <th>Setor</th>
+                    <th>Acoes</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="productsTableBody">
                 {% for product in products %}
-                <tr>
+                <tr data-nome="{{ (product.nome if product.nome is defined else product['nome'])|lower }}">
+                    <td>{{ product.id if product.id is defined else product['id'] }}</td>
+                    <td>{{ product.nome if product.nome is defined else product['nome'] }}</td>
+                    <td>{{ product.setor if product.setor is defined else product['setor'] }}</td>
                     <td>
-                        {% if product.image %}
-                        <img src="{{ url_for('static', filename='uploads/' + product.image) }}"
-                             alt="{{ product.name }}" class="table-img">
-                        {% else %}
-                        <div class="no-image-small">Sem imagem</div>
-                        {% endif %}
-                    </td>
-                    <td>{{ product.name }}</td>
-                    <td>{{ product.brand }}</td>
-                    <td>{{ product.description[:50] }}{% if product.description|length > 50 %}...{% endif %}</td>
-                    <td>
-                        <a href="{{ url_for('admin_edit_product', id=product.id) }}" class="btn btn-sm">Editar</a>
-                        <a href="{{ url_for('admin_delete_product', id=product.id) }}"
+                        <a href="{{ url_for('admin_edit_product', id=product.id if product.id is defined else product['id']) }}" class="btn btn-sm">Editar</a>
+                        <a href="{{ url_for('admin_delete_product', id=product.id if product.id is defined else product['id']) }}"
                            class="btn btn-sm btn-danger"
                            onclick="return confirm('Tem certeza que deseja excluir este produto?')">Excluir</a>
                     </td>
@@ -48,6 +51,10 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Paginacao da tabela -->
+    <div id="tablePagination" style="display: flex; justify-content: center; gap: 5px; margin-top: 20px;"></div>
+
     {% else %}
     <div class="empty-state">
         <p>Nenhum produto cadastrado ainda.</p>
@@ -55,4 +62,114 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+const ITEMS_PER_PAGE = 50;
+let currentPage = 1;
+let allRows = [];
+let filteredRows = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    const tbody = document.getElementById('productsTableBody');
+    if (tbody) {
+        allRows = Array.from(tbody.querySelectorAll('tr'));
+        filteredRows = [...allRows];
+        showPage(1);
+    }
+});
+
+// Busca em tempo real
+document.getElementById('searchProducts').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase().trim();
+    const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
+
+    if (searchTerm === '') {
+        filteredRows = [...allRows];
+    } else {
+        filteredRows = allRows.filter(row => {
+            const nome = row.dataset.nome || '';
+            // Todas as palavras da busca devem estar no nome
+            return searchWords.every(word => nome.includes(word));
+        });
+    }
+
+    currentPage = 1;
+    showPage(1);
+
+    // Mostrar contagem de resultados
+    const countSpan = document.getElementById('searchResultCount');
+    if (searchTerm) {
+        countSpan.textContent = `${filteredRows.length} produto(s) encontrado(s)`;
+    } else {
+        countSpan.textContent = '';
+    }
+});
+
+function showPage(page) {
+    currentPage = page;
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+
+    // Esconder todas as linhas
+    allRows.forEach(row => row.style.display = 'none');
+
+    // Mostrar apenas as linhas da pagina atual
+    filteredRows.slice(start, end).forEach(row => row.style.display = '');
+
+    // Atualizar paginacao
+    renderPagination();
+}
+
+function renderPagination() {
+    const totalPages = Math.ceil(filteredRows.length / ITEMS_PER_PAGE);
+    const paginationDiv = document.getElementById('tablePagination');
+
+    if (totalPages <= 1) {
+        paginationDiv.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+
+    // Botao anterior
+    if (currentPage > 1) {
+        html += `<button onclick="showPage(${currentPage - 1})" class="pagination-btn">←</button>`;
+    }
+
+    // Numeros das paginas
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += `<button onclick="showPage(${i})" class="pagination-btn ${i === currentPage ? 'active' : ''}">${i}</button>`;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += `<span style="padding: 0 5px;">...</span>`;
+        }
+    }
+
+    // Botao proximo
+    if (currentPage < totalPages) {
+        html += `<button onclick="showPage(${currentPage + 1})" class="pagination-btn">→</button>`;
+    }
+
+    paginationDiv.innerHTML = html;
+}
+</script>
+
+<style>
+.pagination-btn {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    border-radius: 5px;
+    min-width: 40px;
+}
+.pagination-btn:hover {
+    background: #f0f0f0;
+}
+.pagination-btn.active {
+    background: #5a67d8;
+    color: white;
+    border-color: #5a67d8;
+}
+</style>
 {% endblock %}

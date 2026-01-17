@@ -6,3 +6,5 @@ fuzzywuzzy==0.18.0
 python-Levenshtein==0.23.0
 waitress==3.0.2
 gunicorn==21.2.0
+python-dotenv==1.0.0
+supabase==2.3.0

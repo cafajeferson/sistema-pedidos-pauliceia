@@ -4,11 +4,11 @@
 
 {% block content %}
 <div class="admin-container">
-    <h1>Painel Administrativo</h1>
+    <h1>Painel Administrativo - {{ categoria_nome }}</h1>
 
     <div class="stats-grid">
         <div class="stat-card">
-            <h3>Total de Produtos</h3>
+            <h3>Total de Produtos ({{ categoria_nome }})</h3>
             <p class="stat-number">{{ total_products }}</p>
         </div>
         <div class="stat-card">
@@ -21,6 +21,11 @@
         <a href="{{ url_for('admin_products') }}" class="admin-menu-item">
             <h3>📦 Gerenciar Produtos</h3>
             <p>Adicionar, editar ou remover produtos do catálogo</p>
+        </a>
+
+        <a href="{{ url_for('admin_queima_estoque') }}" class="admin-menu-item">
+            <h3>🔥 Queima de Estoque</h3>
+            <p>Marcar produtos para promoção de liquidação</p>
         </a>
 
         <a href="{{ url_for('admin_users') }}" class="admin-menu-item">

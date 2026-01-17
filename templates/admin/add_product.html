@@ -8,26 +8,26 @@
 
     <a href="{{ url_for('admin_products') }}" class="btn btn-outline mb-3">← Voltar</a>
 
-    <form method="POST" enctype="multipart/form-data" class="admin-form">
+    <form method="POST" class="admin-form">
         <div class="form-group">
             <label for="name">Nome do Produto *</label>
-            <input type="text" id="name" name="name" required>
+            <input type="text" id="name" name="name" required placeholder="Ex: VERNIZ CC900 1L SHERWIN-WILLIAMS">
         </div>
 
         <div class="form-group">
-            <label for="brand">Marca *</label>
-            <input type="text" id="brand" name="brand" required>
+            <label>Setor</label>
+            <input type="text" value="{{ 'Automotivo' if session.get('categoria_loja') == 'automotivo' else 'Imobiliario' }}" disabled>
+            <small>O produto sera adicionado ao setor atual</small>
         </div>
 
         <div class="form-group">
-            <label for="description">Descrição</label>
-            <textarea id="description" name="description" rows="5"></textarea>
-        </div>
-
-        <div class="form-group">
-            <label for="image">Imagem do Produto</label>
-            <input type="file" id="image" name="image" accept="image/*">
-            <small>Formatos aceitos: JPG, PNG, GIF (Máx: 16MB)</small>
+            <label for="related_product">Produto Relacionado (Catalisador)</label>
+            <input type="text" id="related_product_search" name="related_product_search" 
+                   placeholder="Digite para buscar produto relacionado..." 
+                   autocomplete="off">
+            <input type="hidden" id="related_product_id" name="related_product_id">
+            <div id="search_results" class="search-results-dropdown" style="display: none;"></div>
+            <small>Opcional: vincule um catalisador ou produto complementar</small>
         </div>
 
         <div class="form-actions">
@@ -35,5 +35,88 @@
             <a href="{{ url_for('admin_products') }}" class="btn btn-outline">Cancelar</a>
         </div>
     </form>
+
+    <style>
+        .search-results-dropdown {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            width: calc(100% - 2px);
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .search-result-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .search-result-item:hover {
+            background-color: #f5f5f5;
+        }
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+
+    <script>
+        let searchTimeout;
+        const searchInput = document.getElementById('related_product_search');
+        const searchResults = document.getElementById('search_results');
+        const hiddenInput = document.getElementById('related_product_id');
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+
+            if (query.length < 2) {
+                searchResults.style.display = 'none';
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/search-products?q=${encodeURIComponent(query)}`);
+                    const products = await response.json();
+
+                    if (products.length === 0) {
+                        searchResults.innerHTML = '<div class="search-result-item">Nenhum produto encontrado</div>';
+                        searchResults.style.display = 'block';
+                        return;
+                    }
+
+                    searchResults.innerHTML = products.map(p => 
+                        `<div class="search-result-item" data-id="${p.id}" data-name="${p.name}">
+                            <strong>${p.name}</strong><br>
+                            <small>${p.brand || ''}</small>
+                        </div>`
+                    ).join('');
+                    searchResults.style.display = 'block';
+
+                    // Adicionar eventos de clique
+                    document.querySelectorAll('.search-result-item').forEach(item => {
+                        item.addEventListener('click', function() {
+                            const id = this.dataset.id;
+                            const name = this.dataset.name;
+                            searchInput.value = name;
+                            hiddenInput.value = id;
+                            searchResults.style.display = 'none';
+                        });
+                    });
+                } catch (error) {
+                    console.error('Erro ao buscar produtos:', error);
+                }
+            }, 300);
+        });
+
+        // Fechar dropdown ao clicar fora
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+    </script>
 </div>
 {% endblock %}

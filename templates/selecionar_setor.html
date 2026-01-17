@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selecionar Setor - Pauliceia Tintas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .setor-selection-page {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .setor-container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .setor-header {
+            text-align: center;
+            margin-bottom: 50px;
+            color: white;
+        }
+
+        .setor-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .setor-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .setor-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .setor-card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .setor-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .setor-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .setor-card.automotivo .setor-icon {
+            color: #667eea;
+        }
+
+        .setor-card.imobiliario .setor-icon {
+            color: #f093fb;
+        }
+
+        .setor-card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+
+        .setor-card p {
+            color: #718096;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .setor-divider {
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            margin: 20px 0;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            .setor-header h1 {
+                font-size: 2rem;
+            }
+
+            .setor-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="setor-selection-page">
+    <div class="setor-container">
+        <div class="setor-header">
+            <h1>Pauliceia Tintas</h1>
+            <p>Selecione o setor que deseja acessar</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" style="background: white; margin-bottom: 20px;">
+                    {{ message }}
+                    <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="setor-options">
+            <a href="{{ url_for('set_setor', categoria='automotivo') }}" class="setor-card automotivo">
+                <div class="setor-icon">🚗</div>
+                <h2>Setor Automotivo</h2>
+                <p>Catálogo completo de produtos para o setor automotivo - tintas, acessórios e materiais especializados</p>
+            </a>
+
+            <a href="{{ url_for('set_setor', categoria='imobiliario') }}" class="setor-card imobiliario">
+                <div class="setor-icon">🏠</div>
+                <h2>Setor Imobiliário</h2>
+                <p>Produtos dedicados ao setor imobiliário - tintas residenciais, acabamentos e revestimentos</p>
+            </a>
+        </div>
+
+        {% if session.get('is_admin') %}
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="{{ url_for('logout') }}" class="btn" style="background: rgba(255,255,255,0.2); color: white; border: 2px solid white;">
+                Sair do Sistema
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

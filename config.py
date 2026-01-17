@@ -1,10 +1,23 @@
 import os
+from dotenv import load_dotenv
+
+# Carrega variáveis do arquivo .env
+load_dotenv()
 
 class Config:
     """Configuração base da aplicação"""
-    SECRET_KEY = os.environ.get('SECRET_KEY') or '674e6d0570ebb8bb9b0c146adef437e3a526ecc60666bbffc303a4ce9e3af47c'
+    # IMPORTANTE: Configure estas variáveis no arquivo .env ou nas variáveis de ambiente do servidor
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        raise ValueError("SECRET_KEY não configurada! Configure no arquivo .env")
 
-    # Banco de dados
+    # Supabase - OBRIGATÓRIO configurar no .env
+    SUPABASE_URL = os.environ.get('SUPABASE_URL')
+    SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise ValueError("SUPABASE_URL e SUPABASE_KEY são obrigatórios! Configure no arquivo .env")
+
+    # Banco de dados local (para usuarios e config)
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///pedidos.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
