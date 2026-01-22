@@ -22,6 +22,12 @@
         </div>
 
         <div class="form-group">
+            <label for="description">Descricao do Produto</label>
+            <textarea id="description" name="description" rows="3" placeholder="Descricao detalhada do produto...">{{ product.descricao if product.descricao is defined else product.get('descricao', '') }}</textarea>
+            <small>Opcional: informacoes adicionais sobre o produto</small>
+        </div>
+
+        <div class="form-group">
             <label>Setor</label>
             <input type="text" value="{{ product.setor if product.setor is defined else product['setor'] }}" disabled>
             <small>O setor não pode ser alterado</small>

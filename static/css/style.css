@@ -1391,8 +1391,8 @@ body {
     /* Navbar compacto no mobile - tudo em linha */
     .navbar.navbar-compact .container {
         flex-wrap: wrap;
-        gap: 5px;
-        padding: 5px 10px;
+        gap: 10px;
+        padding: 16px 15px;
     }
 
     .navbar.navbar-compact .nav-brand {
@@ -1403,29 +1403,29 @@ body {
         display: flex;
         flex-direction: row;
         flex-wrap: wrap;
-        gap: 4px;
+        gap: 10px;
         align-items: center;
         justify-content: flex-end;
         flex: 1;
     }
 
     .navbar.navbar-compact .user-info {
-        font-size: 9px;
-        max-width: 50px;
+        font-size: 14px;
+        max-width: 80px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
     .navbar.navbar-compact .btn-xs {
-        padding: 4px 8px;
-        font-size: 11px;
+        padding: 10px 14px;
+        font-size: 14px;
         white-space: nowrap;
     }
 
     .navbar.navbar-compact .categoria-badge {
-        font-size: 9px;
-        padding: 3px 6px;
+        font-size: 13px;
+        padding: 8px 14px;
     }
 
     /* Busca e favoritos no mobile */
@@ -1505,33 +1505,34 @@ body {
         font-size: 24px;
     }
 
-    /* Navbar ainda mais compacto em telas pequenas */
+    /* Navbar compacto em telas pequenas */
     .navbar.navbar-compact {
-        padding: 4px 0;
+        padding: 10px 0;
     }
 
     .navbar.navbar-compact .container {
-        padding: 0 8px;
+        padding: 0 12px;
         flex-wrap: wrap;
-        gap: 4px;
+        gap: 8px;
     }
 
     .navbar.navbar-compact .nav-menu {
-        gap: 3px;
+        gap: 6px;
     }
 
     .navbar.navbar-compact .user-info {
-        display: none; /* Esconde nome de usuário em telas muito pequenas */
+        font-size: 12px;
+        max-width: 60px;
     }
 
     .navbar.navbar-compact .categoria-badge {
-        font-size: 8px;
-        padding: 2px 5px;
+        font-size: 12px;
+        padding: 6px 10px;
     }
 
     .navbar.navbar-compact .btn-xs {
-        padding: 3px 6px;
-        font-size: 10px;
+        padding: 8px 12px;
+        font-size: 13px;
     }
 
     /* Busca ainda mais compacta */
@@ -1549,6 +1550,11 @@ body {
         min-width: 16px;
         height: 16px;
         font-size: 9px;
+    }
+
+    /* Aumentar espaço do conteúdo para não ficar atrás do navbar */
+    .main-content {
+        padding-top: 70px;
     }
 }
 

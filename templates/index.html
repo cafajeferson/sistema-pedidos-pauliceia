@@ -438,16 +438,28 @@ function goToPage(page) {
     document.getElementById('productsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// Função para escapar caracteres especiais em HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/&/g, '&amp;')
+               .replace(/</g, '&lt;')
+               .replace(/>/g, '&gt;')
+               .replace(/"/g, '&quot;')
+               .replace(/'/g, '&#39;');
+}
+
 function createProductCard(product) {
     const isFavorite = favorites.includes(product.id);
     const currentQty = cart[product.id] ? cart[product.id].qty : 0;
+    const safeName = escapeHtml(product.name);
+    const safeBrand = escapeHtml(product.brand);
     const relatedBadge = product.isRelated ?
-        `<div class="related-badge">🔗 Catalisador de ${product.relatedTo}</div>` : '';
+        `<div class="related-badge">🔗 Catalisador de ${escapeHtml(product.relatedTo)}</div>` : '';
     const queimaBadge = product.em_queima_estoque ?
         `<div class="queima-badge">🔥 QUEIMA DE ESTOQUE 🔥</div>` : '';
 
     return `
-        <div class="product-card ${product.em_queima_estoque ? 'product-card-queima' : ''}" data-id="${product.id}" data-name="${product.name}" data-brand="${product.brand}">
+        <div class="product-card ${product.em_queima_estoque ? 'product-card-queima' : ''}" data-id="${product.id}" data-name="${safeName}" data-brand="${safeBrand}">
             ${queimaBadge}
             ${relatedBadge}
             <button class="btn-favorite ${isFavorite ? 'active' : ''}" onclick="toggleFavorite(${product.id})" title="${isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}">

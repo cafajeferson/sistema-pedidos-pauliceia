@@ -142,7 +142,7 @@ def index():
             'id': p['id'],
             'name': p['nome'],
             'brand': marca,
-            'description': '',
+            'description': p.get('descricao') or '',
             # Usar URL da imagem se existir (imagem ou image)
             'image': p.get('imagem') or p.get('image'),
             'related_product_id': p.get('produto_relacionado_id'),
@@ -322,12 +322,14 @@ def admin_products():
 def admin_add_product():
     if request.method == 'POST':
         nome = request.form.get('name')
+        descricao = request.form.get('description', '').strip()
         relacionado_id = request.form.get('related_product_id')
         categoria = session.get('categoria_loja')
 
         # Preparar dados
         produto_data = {
             'nome': nome,
+            'descricao': descricao,
             'setor': categoria
         }
         
@@ -361,6 +363,7 @@ def admin_edit_product(id):
     if request.method == 'POST':
         nome_produto = request.form.get('name')
         marca = request.form.get('brand', '').strip()
+        descricao = request.form.get('description', '').strip()
         relacionado_id = request.form.get('related_product_id')
         imagem_file = request.files.get('image')
 
@@ -377,7 +380,7 @@ def admin_edit_product(id):
             nome_completo = f"{nome_produto} {marca}".strip()
 
         # Preparar dados para atualização
-        update_data = {'nome': nome_completo}
+        update_data = {'nome': nome_completo, 'descricao': descricao}
         
         # Adicionar produto relacionado se fornecido
         if relacionado_id and relacionado_id.strip() and relacionado_id.strip() != 'None':
@@ -444,6 +447,7 @@ def admin_edit_product(id):
         'nome': nome_base,
         'marca': marca,
         'setor': product['setor'],
+        'descricao': product.get('descricao', ''),
         'produto_relacionado_id': produto_relacionado_id,
         'related_product_name': produto_relacionado_nome,
         'imagem': product.get('imagem') or product.get('image')
