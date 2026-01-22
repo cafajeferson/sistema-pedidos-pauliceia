@@ -1507,32 +1507,32 @@ body {
 
     /* Navbar compacto em telas pequenas */
     .navbar.navbar-compact {
-        padding: 10px 0;
+        padding: 14px 0;
     }
 
     .navbar.navbar-compact .container {
-        padding: 0 12px;
+        padding: 0 15px;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 10px;
     }
 
     .navbar.navbar-compact .nav-menu {
-        gap: 6px;
+        gap: 8px;
     }
 
     .navbar.navbar-compact .user-info {
-        font-size: 12px;
-        max-width: 60px;
+        font-size: 14px;
+        max-width: 80px;
     }
 
     .navbar.navbar-compact .categoria-badge {
-        font-size: 12px;
-        padding: 6px 10px;
+        font-size: 14px;
+        padding: 8px 14px;
     }
 
     .navbar.navbar-compact .btn-xs {
-        padding: 8px 12px;
-        font-size: 13px;
+        padding: 10px 16px;
+        font-size: 14px;
     }
 
     /* Busca ainda mais compacta */
@@ -1554,7 +1554,7 @@ body {
 
     /* Aumentar espaço do conteúdo para não ficar atrás do navbar */
     .main-content {
-        padding-top: 70px;
+        padding-top: 80px;
     }
 }
 
