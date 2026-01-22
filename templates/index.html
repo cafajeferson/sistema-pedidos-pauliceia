@@ -214,8 +214,8 @@ function matchesSearchTerms(productName, productBrand, searchTerm) {
         }
     }
 
-    // Basta UMA palavra fazer match (não precisa de todas)
-    const matches = matchCount > 0;
+    // TODAS as palavras precisam fazer match
+    const matches = matchCount === searchWords.length;
 
     // Bonus por match no início do nome
     if (matches && productName.toLowerCase().startsWith(searchWords[0])) {
@@ -281,35 +281,41 @@ function filterAndDisplayProducts() {
         otherProducts.sort((a, b) => b.searchScore - a.searchScore);
     }
 
-    // Adicionar produtos relacionados (catalisadores) - funciona em ambos os modos
+    // Adicionar produtos relacionados (catalisadores) - inserir logo apos o produto principal
     if (searchTerm) {
-        const allCurrentIds = [...filteredProducts.map(p => p.id), ...otherProducts.map(p => p.id)];
+        const addedRelatedIds = new Set();
+        const productsWithRelated = [];
 
-        console.log('Buscando produtos relacionados para:', filteredProducts.length, 'produtos encontrados');
+        // Primeiro, processar filteredProducts e inserir relacionados logo apos cada produto
+        for (let i = 0; i < filteredProducts.length; i++) {
+            const foundProduct = filteredProducts[i];
+            productsWithRelated.push(foundProduct);
 
-        // Para cada produto encontrado, buscar o produto relacionado (catalisador)
-        [...filteredProducts, ...otherProducts].forEach(foundProduct => {
-            console.log('Verificando produto:', foundProduct.name, 'ID:', foundProduct.id, 'relacionado_id:', foundProduct.related_product_id);
-            
-            // Se este produto TEM um produto relacionado
-            if (foundProduct.related_product_id) {
+            // Se este produto TEM um produto relacionado e ainda nao foi adicionado
+            if (foundProduct.related_product_id && !addedRelatedIds.has(foundProduct.related_product_id)) {
                 const relatedProduct = products.find(p => p.id === foundProduct.related_product_id);
-                
-                if (relatedProduct && !allCurrentIds.includes(relatedProduct.id)) {
-                    console.log('Encontrado produto relacionado:', relatedProduct.name, 'do produto', foundProduct.name);
+
+                // Verificar se o relacionado nao esta ja na lista original
+                const alreadyInList = filteredProducts.some(p => p.id === foundProduct.related_product_id) ||
+                                      otherProducts.some(p => p.id === foundProduct.related_product_id);
+
+                if (relatedProduct && !alreadyInList) {
+                    console.log('Inserindo catalisador:', relatedProduct.name, 'apos', foundProduct.name);
                     const relatedCopy = { ...relatedProduct };
                     relatedCopy.isRelated = true;
                     relatedCopy.relatedTo = foundProduct.name;
                     relatedCopy.isFavoriteResult = favorites.includes(relatedProduct.id);
-                    
-                    // Sempre adicionar produtos relacionados aos resultados principais
-                    filteredProducts.push(relatedCopy);
-                    allCurrentIds.push(relatedProduct.id);
+                    relatedCopy.searchScore = foundProduct.searchScore - 0.5; // Score ligeiramente menor para ficar logo apos
+
+                    // Inserir logo apos o produto principal
+                    productsWithRelated.push(relatedCopy);
+                    addedRelatedIds.add(foundProduct.related_product_id);
                 }
             }
-        });
+        }
 
-        console.log('Total de produtos após adicionar relacionados:', filteredProducts.length);
+        filteredProducts = productsWithRelated;
+        console.log('Total de produtos apos adicionar relacionados:', filteredProducts.length);
     }
 
     // Se está nos favoritos, tem busca, adiciona os outros produtos após os favoritos
