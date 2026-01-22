@@ -9,14 +9,20 @@
         <div class="search-box-compact" style="flex: 1; max-width: 600px;">
             <input type="text" id="searchInput" placeholder="Buscar produtos..." style="width: 100%; padding: 12px 15px; font-size: 16px;">
         </div>
-        <button class="btn-favorites-compact" id="btnFavorites" onclick="toggleFavoritesFilter()">
-            <span>⭐</span>
-            <span class="favorites-count" id="favoritesCount">0</span>
-        </button>
-        <button class="btn-favorites-compact" id="btnQueima" onclick="toggleQueimaFilter()" style="background: #ff6b35; margin-left: 8px;" title="Produtos em Queima de Estoque">
-            <span>🔥</span>
-            <span class="queima-count" id="queimaCount">0</span>
-        </button>
+        <div class="btn-filter-wrapper">
+            <button class="btn-favorites-compact" id="btnFavorites" onclick="toggleFavoritesFilter()">
+                <span>⭐</span>
+                <span class="favorites-count" id="favoritesCount">0</span>
+            </button>
+            <span class="btn-filter-label">Favoritos</span>
+        </div>
+        <div class="btn-filter-wrapper">
+            <button class="btn-favorites-compact" id="btnQueima" onclick="toggleQueimaFilter()" style="background: #ff6b35;" title="Produtos em Queima de Estoque">
+                <span>🔥</span>
+                <span class="queima-count" id="queimaCount">0</span>
+            </button>
+            <span class="btn-filter-label">Promoção</span>
+        </div>
     </div>
 </div>
 
