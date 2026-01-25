@@ -288,6 +288,7 @@ function filterAndDisplayProducts() {
     }
 
     // Adicionar produtos relacionados (catalisadores) - inserir logo apos o produto principal
+    // Agora suporta múltiplos catalisadores (IDs separados por vírgula)
     if (searchTerm) {
         const addedRelatedIds = new Set();
         const productsWithRelated = [];
@@ -297,25 +298,31 @@ function filterAndDisplayProducts() {
             const foundProduct = filteredProducts[i];
             productsWithRelated.push(foundProduct);
 
-            // Se este produto TEM um produto relacionado e ainda nao foi adicionado
-            if (foundProduct.related_product_id && !addedRelatedIds.has(foundProduct.related_product_id)) {
-                const relatedProduct = products.find(p => p.id === foundProduct.related_product_id);
+            // Se este produto TEM produtos relacionados (múltiplos catalisadores)
+            if (foundProduct.related_product_ids) {
+                const relatedIds = foundProduct.related_product_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
 
-                // Verificar se o relacionado nao esta ja na lista original
-                const alreadyInList = filteredProducts.some(p => p.id === foundProduct.related_product_id) ||
-                                      otherProducts.some(p => p.id === foundProduct.related_product_id);
+                for (const relatedId of relatedIds) {
+                    if (!addedRelatedIds.has(relatedId)) {
+                        const relatedProduct = products.find(p => p.id === relatedId);
 
-                if (relatedProduct && !alreadyInList) {
-                    console.log('Inserindo catalisador:', relatedProduct.name, 'apos', foundProduct.name);
-                    const relatedCopy = { ...relatedProduct };
-                    relatedCopy.isRelated = true;
-                    relatedCopy.relatedTo = foundProduct.name;
-                    relatedCopy.isFavoriteResult = favorites.includes(relatedProduct.id);
-                    relatedCopy.searchScore = foundProduct.searchScore - 0.5; // Score ligeiramente menor para ficar logo apos
+                        // Verificar se o relacionado nao esta ja na lista original
+                        const alreadyInList = filteredProducts.some(p => p.id === relatedId) ||
+                                              otherProducts.some(p => p.id === relatedId);
 
-                    // Inserir logo apos o produto principal
-                    productsWithRelated.push(relatedCopy);
-                    addedRelatedIds.add(foundProduct.related_product_id);
+                        if (relatedProduct && !alreadyInList) {
+                            console.log('Inserindo catalisador:', relatedProduct.name, 'apos', foundProduct.name);
+                            const relatedCopy = { ...relatedProduct };
+                            relatedCopy.isRelated = true;
+                            relatedCopy.relatedTo = foundProduct.name;
+                            relatedCopy.isFavoriteResult = favorites.includes(relatedProduct.id);
+                            relatedCopy.searchScore = foundProduct.searchScore - 0.5;
+
+                            // Inserir logo apos o produto principal
+                            productsWithRelated.push(relatedCopy);
+                            addedRelatedIds.add(relatedId);
+                        }
+                    }
                 }
             }
         }

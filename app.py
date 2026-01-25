@@ -145,7 +145,7 @@ def index():
             'description': p.get('descricao') or '',
             # Usar URL da imagem se existir (imagem ou image)
             'image': p.get('imagem') or p.get('image'),
-            'related_product_id': p.get('produto_relacionado_id'),
+            'related_product_ids': p.get('produto_relacionado_ids') or (str(p.get('produto_relacionado_id')) if p.get('produto_relacionado_id') else ''),
             'em_queima_estoque': p.get('em_queima_estoque', False),
             'preco_original': p.get('preco_original'),
             'preco_queima': p.get('preco_queima')
@@ -277,6 +277,44 @@ def search_products_api():
 
     return jsonify(result)
 
+@app.route('/api/product/<int:product_id>/photo', methods=['POST'])
+@admin_required
+@categoria_required
+def upload_product_photo(product_id):
+    """API para upload de foto de produto via AJAX"""
+    categoria = session.get('categoria_loja')
+
+    # Verificar se o produto existe e pertence à categoria
+    response = supabase.table('produtos').select('*').eq('id', product_id).eq('setor', categoria).execute()
+    if not response.data:
+        return jsonify({'success': False, 'error': 'Produto não encontrado'}), 404
+
+    product = response.data[0]
+    imagem_file = request.files.get('image')
+
+    if not imagem_file or not imagem_file.filename:
+        return jsonify({'success': False, 'error': 'Nenhuma imagem enviada'}), 400
+
+    try:
+        filename = secure_filename(imagem_file.filename)
+        storage_path = f"produtos/{int(time.time())}_{uuid.uuid4().hex}_{filename}"
+
+        file_bytes = imagem_file.read()
+        # Upload para bucket configurado
+        supabase.storage.from_(SUPABASE_BUCKET).upload(storage_path, file_bytes, {
+            "content-type": imagem_file.mimetype or "application/octet-stream"
+        })
+        public_url_resp = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(storage_path)
+        public_url = public_url_resp.get('publicUrl') if isinstance(public_url_resp, dict) else public_url_resp
+
+        # Atualizar o produto com a nova URL da imagem
+        image_field = 'imagem' if 'imagem' in product else 'image'
+        supabase.table('produtos').update({image_field: public_url}).eq('id', product_id).execute()
+
+        return jsonify({'success': True, 'image_url': public_url})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # Rotas Admin
 @app.route('/admin')
 @admin_required
@@ -323,7 +361,7 @@ def admin_add_product():
     if request.method == 'POST':
         nome = request.form.get('name')
         descricao = request.form.get('description', '').strip()
-        relacionado_id = request.form.get('related_product_id')
+        relacionado_ids = request.form.get('related_product_ids', '').strip()
         categoria = session.get('categoria_loja')
 
         # Preparar dados
@@ -332,11 +370,12 @@ def admin_add_product():
             'descricao': descricao,
             'setor': categoria
         }
-        
-        # Adicionar produto relacionado se fornecido
-        if relacionado_id and relacionado_id.strip() and relacionado_id.strip() != 'None':
+
+        # Adicionar produtos relacionados (múltiplos catalisadores)
+        if relacionado_ids and relacionado_ids != 'None':
             try:
-                produto_data['produto_relacionado_id'] = int(relacionado_id)
+                ids_validos = [str(int(id.strip())) for id in relacionado_ids.split(',') if id.strip()]
+                produto_data['produto_relacionado_ids'] = ','.join(ids_validos) if ids_validos else None
             except (ValueError, TypeError):
                 pass
 
@@ -364,7 +403,7 @@ def admin_edit_product(id):
         nome_produto = request.form.get('name')
         marca = request.form.get('brand', '').strip()
         descricao = request.form.get('description', '').strip()
-        relacionado_id = request.form.get('related_product_id')
+        relacionado_ids = request.form.get('related_product_ids', '').strip()
         imagem_file = request.files.get('image')
 
         # Se a marca foi apagada, manter a marca anterior
@@ -381,15 +420,17 @@ def admin_edit_product(id):
 
         # Preparar dados para atualização
         update_data = {'nome': nome_completo, 'descricao': descricao}
-        
-        # Adicionar produto relacionado se fornecido
-        if relacionado_id and relacionado_id.strip() and relacionado_id.strip() != 'None':
+
+        # Adicionar produtos relacionados (múltiplos catalisadores)
+        if relacionado_ids and relacionado_ids != 'None':
+            # Validar que são IDs numéricos separados por vírgula
             try:
-                update_data['produto_relacionado_id'] = int(relacionado_id)
+                ids_validos = [str(int(id.strip())) for id in relacionado_ids.split(',') if id.strip()]
+                update_data['produto_relacionado_ids'] = ','.join(ids_validos) if ids_validos else None
             except (ValueError, TypeError):
-                update_data['produto_relacionado_id'] = None
+                update_data['produto_relacionado_ids'] = None
         else:
-            update_data['produto_relacionado_id'] = None
+            update_data['produto_relacionado_ids'] = None
 
         # Upload de imagem no Supabase Storage, se enviado
         if imagem_file and imagem_file.filename:
@@ -429,15 +470,24 @@ def admin_edit_product(id):
         marca = ''
         nome_base = nome_completo
 
-    # Buscar nome do produto relacionado se existir
-    produto_relacionado_nome = ''
-    produto_relacionado_id = product.get('produto_relacionado_id')
-    
-    if produto_relacionado_id:
+    # Buscar dados dos produtos relacionados (múltiplos catalisadores)
+    related_products_data = []
+    produto_relacionado_ids = product.get('produto_relacionado_ids') or ''
+
+    # Compatibilidade com campo antigo (single ID)
+    if not produto_relacionado_ids and product.get('produto_relacionado_id'):
+        produto_relacionado_ids = str(product.get('produto_relacionado_id'))
+
+    if produto_relacionado_ids:
         try:
-            rel_response = supabase.table('produtos').select('nome').eq('id', produto_relacionado_id).execute()
-            if rel_response.data and len(rel_response.data) > 0:
-                produto_relacionado_nome = rel_response.data[0]['nome']
+            ids_list = [int(id.strip()) for id in produto_relacionado_ids.split(',') if id.strip()]
+            for rel_id in ids_list:
+                rel_response = supabase.table('produtos').select('id, nome').eq('id', rel_id).execute()
+                if rel_response.data and len(rel_response.data) > 0:
+                    related_products_data.append({
+                        'id': rel_response.data[0]['id'],
+                        'name': rel_response.data[0]['nome']
+                    })
         except:
             pass
 
@@ -448,8 +498,8 @@ def admin_edit_product(id):
         'marca': marca,
         'setor': product['setor'],
         'descricao': product.get('descricao', ''),
-        'produto_relacionado_id': produto_relacionado_id,
-        'related_product_name': produto_relacionado_nome,
+        'produto_relacionado_ids': produto_relacionado_ids,
+        'related_products_data': related_products_data,
         'imagem': product.get('imagem') or product.get('image')
     }
 

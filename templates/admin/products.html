@@ -41,6 +41,7 @@
                     <td>{{ product.nome if product.nome is defined else product['nome'] }}</td>
                     <td>{{ product.setor if product.setor is defined else product['setor'] }}</td>
                     <td>
+                        <button class="btn btn-sm btn-photo" onclick="openPhotoModal({{ product.id if product.id is defined else product['id'] }}, '{{ (product.nome if product.nome is defined else product['nome'])|e }}')" title="Adicionar/Alterar Foto">📷</button>
                         <a href="{{ url_for('admin_edit_product', id=product.id if product.id is defined else product['id']) }}" class="btn btn-sm">Editar</a>
                         <a href="{{ url_for('admin_delete_product', id=product.id if product.id is defined else product['id']) }}"
                            class="btn btn-sm btn-danger"
@@ -61,6 +62,29 @@
         <a href="{{ url_for('admin_add_product') }}" class="btn btn-primary">Adicionar Primeiro Produto</a>
     </div>
     {% endif %}
+</div>
+
+<!-- Modal de Upload de Foto -->
+<div id="photoModal" class="photo-modal" style="display: none;">
+    <div class="photo-modal-content">
+        <div class="photo-modal-header">
+            <h3>📷 Adicionar Foto</h3>
+            <span class="photo-modal-close" onclick="closePhotoModal()">&times;</span>
+        </div>
+        <div class="photo-modal-body">
+            <p id="photoProductName" style="font-weight: bold; margin-bottom: 15px;"></p>
+            <form id="photoUploadForm" enctype="multipart/form-data">
+                <input type="hidden" id="photoProductId" name="product_id">
+                <input type="file" id="photoFile" name="image" accept="image/*" required style="margin-bottom: 15px;">
+                <div id="photoPreview" style="margin-bottom: 15px;"></div>
+                <div class="photo-modal-actions">
+                    <button type="submit" class="btn btn-primary" id="photoSubmitBtn">Salvar Foto</button>
+                    <button type="button" class="btn btn-outline" onclick="closePhotoModal()">Cancelar</button>
+                </div>
+            </form>
+            <div id="photoUploadStatus" style="margin-top: 10px;"></div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -152,6 +176,84 @@ function renderPagination() {
 
     paginationDiv.innerHTML = html;
 }
+
+// Funções do Modal de Foto
+function openPhotoModal(productId, productName) {
+    document.getElementById('photoProductId').value = productId;
+    document.getElementById('photoProductName').textContent = productName;
+    document.getElementById('photoFile').value = '';
+    document.getElementById('photoPreview').innerHTML = '';
+    document.getElementById('photoUploadStatus').innerHTML = '';
+    document.getElementById('photoModal').style.display = 'flex';
+}
+
+function closePhotoModal() {
+    document.getElementById('photoModal').style.display = 'none';
+}
+
+// Preview da imagem selecionada
+document.getElementById('photoFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('photoPreview').innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Upload da foto via AJAX
+document.getElementById('photoUploadForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const productId = document.getElementById('photoProductId').value;
+    const fileInput = document.getElementById('photoFile');
+    const statusDiv = document.getElementById('photoUploadStatus');
+    const submitBtn = document.getElementById('photoSubmitBtn');
+
+    if (!fileInput.files[0]) {
+        statusDiv.innerHTML = '<span style="color: red;">Selecione uma imagem!</span>';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', fileInput.files[0]);
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando...';
+    statusDiv.innerHTML = '<span style="color: #666;">Enviando foto...</span>';
+
+    try {
+        const response = await fetch(`/api/product/${productId}/photo`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            statusDiv.innerHTML = '<span style="color: green;">✓ Foto salva com sucesso!</span>';
+            setTimeout(() => {
+                closePhotoModal();
+            }, 1000);
+        } else {
+            statusDiv.innerHTML = `<span style="color: red;">Erro: ${result.error || 'Falha ao salvar'}</span>`;
+        }
+    } catch (error) {
+        statusDiv.innerHTML = `<span style="color: red;">Erro: ${error.message}</span>`;
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Salvar Foto';
+    }
+});
+
+// Fechar modal clicando fora
+document.getElementById('photoModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePhotoModal();
+    }
+});
 </script>
 
 <style>
@@ -170,6 +272,65 @@ function renderPagination() {
     background: #5a67d8;
     color: white;
     border-color: #5a67d8;
+}
+.btn-photo {
+    background: #10b981;
+    color: white;
+    border: none;
+}
+.btn-photo:hover {
+    background: #059669;
+}
+.photo-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+.photo-modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+.photo-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+.photo-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+}
+.photo-modal-close {
+    font-size: 28px;
+    cursor: pointer;
+    color: #666;
+}
+.photo-modal-close:hover {
+    color: #333;
+}
+.photo-modal-body {
+    padding: 20px;
+}
+.photo-modal-actions {
+    display: flex;
+    gap: 10px;
+}
+#photoPreview img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
 }
 </style>
 {% endblock %}

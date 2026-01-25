@@ -51,15 +51,15 @@
         </div>
 
         <div class="form-group" style="position: relative;">
-            <label for="related_product">Produto Relacionado (Catalisador)</label>
-            <input type="text" id="related_product_search" name="related_product_search" 
-                   placeholder="Digite para buscar produto relacionado..." 
-                   autocomplete="off"
-                   value="{{ product.related_product_name if product.related_product_name is defined else '' }}">
-            <input type="hidden" id="related_product_id" name="related_product_id" 
-                   value="{{ product.produto_relacionado_id if product.produto_relacionado_id is defined else '' }}">
+            <label for="related_product">Produtos Relacionados (Catalisadores)</label>
+            <div id="selected_products_list" class="selected-products-list"></div>
+            <input type="text" id="related_product_search" name="related_product_search"
+                   placeholder="Digite para buscar e adicionar catalisadores..."
+                   autocomplete="off">
+            <input type="hidden" id="related_product_ids" name="related_product_ids"
+                   value="{{ product.produto_relacionado_ids if product.produto_relacionado_ids is defined else '' }}">
             <div id="search_results" class="search-results-dropdown" style="display: none;"></div>
-            <small>Opcional: vincule um catalisador ou produto complementar</small>
+            <small>Opcional: vincule um ou mais catalisadores ou produtos complementares</small>
         </div>
 
         <div class="form-actions">
@@ -91,6 +91,32 @@
         .search-result-item:last-child {
             border-bottom: none;
         }
+        .selected-products-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .selected-product-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+        .selected-product-tag .remove-btn {
+            cursor: pointer;
+            color: #c62828;
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 1;
+        }
+        .selected-product-tag .remove-btn:hover {
+            color: #b71c1c;
+        }
     </style>
 
     <script>
@@ -114,20 +140,53 @@
         // Atualizar preview ao carregar
         updatePreview();
 
-        // Busca de produtos relacionados
+        // Busca de produtos relacionados - múltiplos catalisadores
         let searchTimeout;
         const searchInput = document.getElementById('related_product_search');
         const searchResults = document.getElementById('search_results');
-        const hiddenInput = document.getElementById('related_product_id');
+        const hiddenInput = document.getElementById('related_product_ids');
+        const selectedList = document.getElementById('selected_products_list');
         const currentProductId = {{ product.id if product.id is defined else 'null' }};
 
-        console.log('Sistema de busca inicializado');
+        // Lista de produtos selecionados {id, name}
+        let selectedProducts = [];
+
+        // Carregar produtos já vinculados
+        const initialData = {{ product.related_products_data | tojson if product.related_products_data is defined else '[]' | safe }};
+        if (initialData && initialData.length > 0) {
+            initialData.forEach(p => {
+                selectedProducts.push({ id: p.id, name: p.name });
+            });
+            renderSelectedProducts();
+        }
+
+        function renderSelectedProducts() {
+            selectedList.innerHTML = selectedProducts.map(p =>
+                `<span class="selected-product-tag" data-id="${p.id}">
+                    ${p.name}
+                    <span class="remove-btn" onclick="removeProduct(${p.id})">×</span>
+                </span>`
+            ).join('');
+            hiddenInput.value = selectedProducts.map(p => p.id).join(',');
+        }
+
+        function removeProduct(id) {
+            selectedProducts = selectedProducts.filter(p => p.id !== id);
+            renderSelectedProducts();
+        }
+
+        function addProduct(id, name) {
+            if (!selectedProducts.some(p => p.id === id)) {
+                selectedProducts.push({ id: parseInt(id), name: name });
+                renderSelectedProducts();
+            }
+            searchInput.value = '';
+            searchResults.style.display = 'none';
+        }
 
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
             const query = this.value.trim();
-
-            console.log('Digitado:', query);
 
             if (query.length < 2) {
                 searchResults.style.display = 'none';
@@ -137,20 +196,19 @@
             searchTimeout = setTimeout(async () => {
                 try {
                     const url = `/api/search-products?q=${encodeURIComponent(query)}${currentProductId ? '&exclude_id=' + currentProductId : ''}`;
-                    console.log('Buscando URL:', url);
-                    
                     const response = await fetch(url);
                     const products = await response.json();
 
-                    console.log('Produtos encontrados:', products.length);
+                    // Filtrar produtos já selecionados
+                    const filteredProducts = products.filter(p => !selectedProducts.some(sp => sp.id === p.id));
 
-                    if (products.length === 0) {
+                    if (filteredProducts.length === 0) {
                         searchResults.innerHTML = '<div class="search-result-item">Nenhum produto encontrado</div>';
                         searchResults.style.display = 'block';
                         return;
                     }
 
-                    searchResults.innerHTML = products.map(p => 
+                    searchResults.innerHTML = filteredProducts.map(p =>
                         `<div class="search-result-item" data-id="${p.id}" data-name="${p.name}">
                             <strong>${p.name}</strong><br>
                             <small>${p.brand || ''}</small>
@@ -158,15 +216,9 @@
                     ).join('');
                     searchResults.style.display = 'block';
 
-                    // Adicionar eventos de clique
                     document.querySelectorAll('.search-result-item').forEach(item => {
                         item.addEventListener('click', function() {
-                            const id = this.dataset.id;
-                            const name = this.dataset.name;
-                            searchInput.value = name;
-                            hiddenInput.value = id;
-                            searchResults.style.display = 'none';
-                            console.log('Produto selecionado:', name, 'ID:', id);
+                            addProduct(this.dataset.id, this.dataset.name);
                         });
                     });
                 } catch (error) {
