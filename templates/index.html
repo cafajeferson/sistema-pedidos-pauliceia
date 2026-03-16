@@ -147,6 +147,8 @@ function fuzzySimilarity(str1, str2) {
     updateQueimaCount();
     // Renderizar produtos na carga inicial
     filterAndDisplayProducts();
+    // Restaurar carrinho do localStorage na tela
+    updateCartDisplay();
 })();
 
 function updateQueimaCount() {
