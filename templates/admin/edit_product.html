@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Produto{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h1>Editar Produto</h1>
+
+    <a href="{{ url_for('admin_products') }}" class="btn btn-outline mb-3">← Voltar</a>
+
+    <form method="POST" class="admin-form" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="name">Nome do Produto *</label>
+            <input type="text" id="name" name="name" value="{{ product.nome if product.nome is defined else product['nome'] }}" required>
+            <small>Nome base do produto</small>
+        </div>
+
+        <div class="form-group">
+            <label for="brand">Marca *</label>
+            <input type="text" id="brand" name="brand" value="{{ product.marca if product.marca is defined else product.get('marca', '') }}" placeholder="Ex: SHERWIN-WILLIAMS">
+            <small>Marca/fabricante do produto (não pode ser vazia)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Descricao do Produto</label>
+            <textarea id="description" name="description" rows="3" placeholder="Descricao detalhada do produto...">{{ product.descricao if product.descricao is defined else product.get('descricao', '') }}</textarea>
+            <small>Opcional: informacoes adicionais sobre o produto</small>
+        </div>
+
+        <div class="form-group">
+            <label>Setor</label>
+            <input type="text" value="{{ product.setor if product.setor is defined else product['setor'] }}" disabled>
+            <small>O setor não pode ser alterado</small>
+        </div>
+
+        <div class="form-group">
+            <label for="image">Foto do Produto</label>
+            {% if product.imagem %}
+                <div style="margin-bottom: 10px;">
+                    <img src="/static/uploads/{{ product.imagem }}" alt="Imagem atual" style="max-width: 200px; border: 1px solid #ddd; padding: 4px;">
+                </div>
+            {% endif %}
+            <input type="file" id="image" name="image" accept="image/*">
+            <small>Opcional: selecione uma nova foto para o produto</small>
+        </div>
+
+        <div class="form-group">
+            <label>Nome Completo (preview)</label>
+            <input type="text" id="preview" disabled style="background-color: #f0f0f0;">
+            <small>Este é o nome que será salvo</small>
+        </div>
+
+        <div class="form-group" style="position: relative;">
+            <label for="related_product">Produtos Relacionados (Catalisadores)</label>
+            <div id="selected_products_list" class="selected-products-list"></div>
+            <input type="text" id="related_product_search" name="related_product_search"
+                   placeholder="Digite para buscar e adicionar catalisadores..."
+                   autocomplete="off">
+            <input type="hidden" id="related_product_ids" name="related_product_ids"
+                   value="{{ product.produto_relacionado_ids if product.produto_relacionado_ids is defined else '' }}">
+            <div id="search_results" class="search-results-dropdown" style="display: none;"></div>
+            <small>Opcional: vincule um ou mais catalisadores ou produtos complementares</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+            <a href="{{ url_for('admin_products') }}" class="btn btn-outline">Cancelar</a>
+        </div>
+    </form>
+
+    <style>
+        .search-results-dropdown {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            width: calc(100% - 2px);
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .search-result-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .search-result-item:hover {
+            background-color: #f5f5f5;
+        }
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        .selected-products-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .selected-product-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+        .selected-product-tag .remove-btn {
+            cursor: pointer;
+            color: #c62828;
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 1;
+        }
+        .selected-product-tag .remove-btn:hover {
+            color: #b71c1c;
+        }
+    </style>
+
+    <script>
+        function updatePreview() {
+            const nome = document.getElementById('name').value.trim();
+            const marca = document.getElementById('brand').value.trim();
+            const preview = document.getElementById('preview');
+            
+            if (nome && marca) {
+                preview.value = nome + ' ' + marca;
+            } else if (nome) {
+                preview.value = nome;
+            } else {
+                preview.value = '';
+            }
+        }
+        
+        document.getElementById('name').addEventListener('input', updatePreview);
+        document.getElementById('brand').addEventListener('input', updatePreview);
+        
+        // Atualizar preview ao carregar
+        updatePreview();
+
+        // Busca de produtos relacionados - múltiplos catalisadores
+        let searchTimeout;
+        const searchInput = document.getElementById('related_product_search');
+        const searchResults = document.getElementById('search_results');
+        const hiddenInput = document.getElementById('related_product_ids');
+        const selectedList = document.getElementById('selected_products_list');
+        const currentProductId = {{ product.id if product.id is defined else 'null' }};
+
+        // Lista de produtos selecionados {id, name}
+        let selectedProducts = [];
+
+        // Carregar produtos já vinculados
+        const initialData = {{ product.related_products_data | tojson if product.related_products_data is defined else '[]' | safe }};
+        if (initialData && initialData.length > 0) {
+            initialData.forEach(p => {
+                selectedProducts.push({ id: p.id, name: p.name });
+            });
+            renderSelectedProducts();
+        }
+
+        function renderSelectedProducts() {
+            selectedList.innerHTML = selectedProducts.map(p =>
+                `<span class="selected-product-tag" data-id="${p.id}">
+                    ${p.name}
+                    <span class="remove-btn" onclick="removeProduct(${p.id})">×</span>
+                </span>`
+            ).join('');
+            hiddenInput.value = selectedProducts.map(p => p.id).join(',');
+        }
+
+        function removeProduct(id) {
+            selectedProducts = selectedProducts.filter(p => p.id !== id);
+            renderSelectedProducts();
+        }
+
+        function addProduct(id, name) {
+            if (!selectedProducts.some(p => p.id === id)) {
+                selectedProducts.push({ id: parseInt(id), name: name });
+                renderSelectedProducts();
+            }
+            searchInput.value = '';
+            searchResults.style.display = 'none';
+        }
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+
+            if (query.length < 2) {
+                searchResults.style.display = 'none';
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const url = `/api/search-products?q=${encodeURIComponent(query)}${currentProductId ? '&exclude_id=' + currentProductId : ''}`;
+                    const response = await fetch(url);
+                    const products = await response.json();
+
+                    // Filtrar produtos já selecionados
+                    const filteredProducts = products.filter(p => !selectedProducts.some(sp => sp.id === p.id));
+
+                    if (filteredProducts.length === 0) {
+                        searchResults.innerHTML = '<div class="search-result-item">Nenhum produto encontrado</div>';
+                        searchResults.style.display = 'block';
+                        return;
+                    }
+
+                    searchResults.innerHTML = filteredProducts.map(p =>
+                        `<div class="search-result-item" data-id="${p.id}" data-name="${p.name}">
+                            <strong>${p.name}</strong><br>
+                            <small>${p.brand || ''}</small>
+                        </div>`
+                    ).join('');
+                    searchResults.style.display = 'block';
+
+                    document.querySelectorAll('.search-result-item').forEach(item => {
+                        item.addEventListener('click', function() {
+                            addProduct(this.dataset.id, this.dataset.name);
+                        });
+                    });
+                } catch (error) {
+                    console.error('Erro ao buscar produtos:', error);
+                    searchResults.innerHTML = '<div class="search-result-item" style="color: red;">Erro ao buscar produtos</div>';
+                    searchResults.style.display = 'block';
+                }
+            }, 300);
+        });
+
+        // Fechar dropdown ao clicar fora
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+    </script>
+</div>
+{% endblock %}

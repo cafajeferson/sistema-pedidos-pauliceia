@@ -1,0 +1,86 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Flask
+instance/
+.webassets-cache
+
+# Banco de dados
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads
+static/uploads/*
+!static/uploads/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+
+# Arquivos temporários Claude
+tmpclaude-*
+
+# Scripts de desenvolvimento (não enviar para produção)
+setup_supabase.py
+upload_supabase.py
+adicionar_marca.py
+adicionar_coluna_relacionado.py
+criar_dados_teste.py
+populate_sample_data.py
+
+# Arquivos locais desnecessários
+hostinger_upload.zip
+*.bat
+logo/
+produtos/
+docs/
+png
+
+# Arquivos SQL de migração
+*.sql
+
+# Documentação local
+CHECKLIST_*.txt
+CHECKLIST_*.md
+COMANDOS_UTEIS.txt
+COMO_USAR*.txt
+DEPLOY_*.txt
+ESTRUTURA_*.txt
+INSTALACAO.txt
+LEIA_ME_PRIMEIRO.txt
+README_DEPLOY.md
+SEGMENTACAO_*.md

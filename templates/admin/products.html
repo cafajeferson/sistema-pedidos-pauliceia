@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Produtos{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1>Gerenciar Produtos</h1>
+        <a href="{{ url_for('admin_add_product') }}" class="btn btn-primary">+ Adicionar Produto</a>
+    </div>
+
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline mb-3">← Voltar ao Dashboard</a>
+
+    <!-- Barra de busca -->
+    <div class="admin-search-box" style="margin-bottom: 20px;">
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="position: relative; flex: 1; max-width: 400px;">
+                <input type="text" id="searchProducts" placeholder="Buscar produto..."
+                       style="width: 100%; padding: 10px 40px 10px 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; color: #666;">🔍</span>
+            </div>
+            <span id="searchResultCount" style="color: #666; font-size: 14px;"></span>
+        </div>
+    </div>
+
+    {% if products %}
+    <div class="table-responsive">
+        <table class="admin-table" id="productsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Setor</th>
+                    <th>Acoes</th>
+                </tr>
+            </thead>
+            <tbody id="productsTableBody">
+                {% for product in products %}
+                <tr data-nome="{{ (product.nome if product.nome is defined else product['nome'])|lower }}">
+                    <td>{{ product.id if product.id is defined else product['id'] }}</td>
+                    <td>{{ product.nome if product.nome is defined else product['nome'] }}</td>
+                    <td>{{ product.setor if product.setor is defined else product['setor'] }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-photo" onclick="openPhotoModal({{ product.id if product.id is defined else product['id'] }}, '{{ (product.nome if product.nome is defined else product['nome'])|e }}')" title="Adicionar/Alterar Foto">📷</button>
+                        <a href="{{ url_for('admin_edit_product', id=product.id if product.id is defined else product['id']) }}" class="btn btn-sm">Editar</a>
+                        <a href="{{ url_for('admin_delete_product', id=product.id if product.id is defined else product['id']) }}"
+                           class="btn btn-sm btn-danger"
+                           onclick="return confirm('Tem certeza que deseja excluir este produto?')">Excluir</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginacao da tabela -->
+    <div id="tablePagination" style="display: flex; justify-content: center; gap: 5px; margin-top: 20px;"></div>
+
+    {% else %}
+    <div class="empty-state">
+        <p>Nenhum produto cadastrado ainda.</p>
+        <a href="{{ url_for('admin_add_product') }}" class="btn btn-primary">Adicionar Primeiro Produto</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal de Upload de Foto -->
+<div id="photoModal" class="photo-modal" style="display: none;">
+    <div class="photo-modal-content">
+        <div class="photo-modal-header">
+            <h3>📷 Adicionar Foto</h3>
+            <span class="photo-modal-close" onclick="closePhotoModal()">&times;</span>
+        </div>
+        <div class="photo-modal-body">
+            <p id="photoProductName" style="font-weight: bold; margin-bottom: 15px;"></p>
+            <form id="photoUploadForm" enctype="multipart/form-data">
+                <input type="hidden" id="photoProductId" name="product_id">
+                <input type="file" id="photoFile" name="image" accept="image/*" required style="margin-bottom: 15px;">
+                <div id="photoPreview" style="margin-bottom: 15px;"></div>
+                <div class="photo-modal-actions">
+                    <button type="submit" class="btn btn-primary" id="photoSubmitBtn">Salvar Foto</button>
+                    <button type="button" class="btn btn-outline" onclick="closePhotoModal()">Cancelar</button>
+                </div>
+            </form>
+            <div id="photoUploadStatus" style="margin-top: 10px;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const ITEMS_PER_PAGE = 50;
+let currentPage = 1;
+let allRows = [];
+let filteredRows = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    const tbody = document.getElementById('productsTableBody');
+    if (tbody) {
+        allRows = Array.from(tbody.querySelectorAll('tr'));
+        filteredRows = [...allRows];
+        showPage(1);
+    }
+});
+
+// Busca em tempo real
+document.getElementById('searchProducts').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase().trim();
+    const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
+
+    if (searchTerm === '') {
+        filteredRows = [...allRows];
+    } else {
+        filteredRows = allRows.filter(row => {
+            const nome = row.dataset.nome || '';
+            // Todas as palavras da busca devem estar no nome
+            return searchWords.every(word => nome.includes(word));
+        });
+    }
+
+    currentPage = 1;
+    showPage(1);
+
+    // Mostrar contagem de resultados
+    const countSpan = document.getElementById('searchResultCount');
+    if (searchTerm) {
+        countSpan.textContent = `${filteredRows.length} produto(s) encontrado(s)`;
+    } else {
+        countSpan.textContent = '';
+    }
+});
+
+function showPage(page) {
+    currentPage = page;
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+
+    // Esconder todas as linhas
+    allRows.forEach(row => row.style.display = 'none');
+
+    // Mostrar apenas as linhas da pagina atual
+    filteredRows.slice(start, end).forEach(row => row.style.display = '');
+
+    // Atualizar paginacao
+    renderPagination();
+}
+
+function renderPagination() {
+    const totalPages = Math.ceil(filteredRows.length / ITEMS_PER_PAGE);
+    const paginationDiv = document.getElementById('tablePagination');
+
+    if (totalPages <= 1) {
+        paginationDiv.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+
+    // Botao anterior
+    if (currentPage > 1) {
+        html += `<button onclick="showPage(${currentPage - 1})" class="pagination-btn">←</button>`;
+    }
+
+    // Numeros das paginas
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += `<button onclick="showPage(${i})" class="pagination-btn ${i === currentPage ? 'active' : ''}">${i}</button>`;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += `<span style="padding: 0 5px;">...</span>`;
+        }
+    }
+
+    // Botao proximo
+    if (currentPage < totalPages) {
+        html += `<button onclick="showPage(${currentPage + 1})" class="pagination-btn">→</button>`;
+    }
+
+    paginationDiv.innerHTML = html;
+}
+
+// Funções do Modal de Foto
+function openPhotoModal(productId, productName) {
+    document.getElementById('photoProductId').value = productId;
+    document.getElementById('photoProductName').textContent = productName;
+    document.getElementById('photoFile').value = '';
+    document.getElementById('photoPreview').innerHTML = '';
+    document.getElementById('photoUploadStatus').innerHTML = '';
+    document.getElementById('photoModal').style.display = 'flex';
+}
+
+function closePhotoModal() {
+    document.getElementById('photoModal').style.display = 'none';
+}
+
+// Preview da imagem selecionada
+document.getElementById('photoFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('photoPreview').innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Upload da foto via AJAX
+document.getElementById('photoUploadForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const productId = document.getElementById('photoProductId').value;
+    const fileInput = document.getElementById('photoFile');
+    const statusDiv = document.getElementById('photoUploadStatus');
+    const submitBtn = document.getElementById('photoSubmitBtn');
+
+    if (!fileInput.files[0]) {
+        statusDiv.innerHTML = '<span style="color: red;">Selecione uma imagem!</span>';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', fileInput.files[0]);
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando...';
+    statusDiv.innerHTML = '<span style="color: #666;">Enviando foto...</span>';
+
+    try {
+        const response = await fetch(`/api/product/${productId}/photo`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            statusDiv.innerHTML = '<span style="color: green;">✓ Foto salva com sucesso!</span>';
+            setTimeout(() => {
+                closePhotoModal();
+            }, 1000);
+        } else {
+            statusDiv.innerHTML = `<span style="color: red;">Erro: ${result.error || 'Falha ao salvar'}</span>`;
+        }
+    } catch (error) {
+        statusDiv.innerHTML = `<span style="color: red;">Erro: ${error.message}</span>`;
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Salvar Foto';
+    }
+});
+
+// Fechar modal clicando fora
+document.getElementById('photoModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePhotoModal();
+    }
+});
+</script>
+
+<style>
+.pagination-btn {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    border-radius: 5px;
+    min-width: 40px;
+}
+.pagination-btn:hover {
+    background: #f0f0f0;
+}
+.pagination-btn.active {
+    background: #5a67d8;
+    color: white;
+    border-color: #5a67d8;
+}
+.btn-photo {
+    background: #10b981;
+    color: white;
+    border: none;
+}
+.btn-photo:hover {
+    background: #059669;
+}
+.photo-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+.photo-modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+.photo-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+.photo-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+}
+.photo-modal-close {
+    font-size: 28px;
+    cursor: pointer;
+    color: #666;
+}
+.photo-modal-close:hover {
+    color: #333;
+}
+.photo-modal-body {
+    padding: 20px;
+}
+.photo-modal-actions {
+    display: flex;
+    gap: 10px;
+}
+#photoPreview img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+</style>
+{% endblock %}
