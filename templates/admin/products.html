@@ -29,6 +29,7 @@
             <thead>
                 <tr>
                     <th>ID</th>
+                    <th>Foto</th>
                     <th>Nome</th>
                     <th>Setor</th>
                     <th>Acoes</th>
@@ -36,10 +37,21 @@
             </thead>
             <tbody id="productsTableBody">
                 {% for product in products %}
-                <tr data-nome="{{ (product.nome if product.nome is defined else product['nome'])|lower }}">
-                    <td>{{ product.id if product.id is defined else product['id'] }}</td>
-                    <td>{{ product.nome if product.nome is defined else product['nome'] }}</td>
-                    <td>{{ product.setor if product.setor is defined else product['setor'] }}</td>
+                {% set nome = product.nome if product.nome is defined else product['nome'] %}
+                {% set prod_id = product.id if product.id is defined else product['id'] %}
+                {% set setor = product.setor if product.setor is defined else product['setor'] %}
+                {% set imagem = product.imagem if product.imagem is defined else product.get('imagem', '') %}
+                <tr data-nome="{{ nome|lower }}">
+                    <td style="font-size:13px; color:#666;">{{ prod_id }}</td>
+                    <td>
+                        {% if imagem %}
+                            <img src="{{ imagem }}" alt="{{ nome }}" class="admin-thumb" title="Foto cadastrada">
+                        {% else %}
+                            <span class="no-photo-badge" title="Sem foto">Sem foto</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ nome }}</td>
+                    <td>{{ setor }}</td>
                     <td>
                         <button class="btn btn-sm btn-photo" onclick="openPhotoModal({{ product.id if product.id is defined else product['id'] }}, '{{ (product.nome if product.nome is defined else product['nome'])|e }}')" title="Adicionar/Alterar Foto">📷</button>
                         <a href="{{ url_for('admin_edit_product', id=product.id if product.id is defined else product['id']) }}" class="btn btn-sm">Editar</a>
@@ -280,6 +292,25 @@ document.getElementById('photoModal').addEventListener('click', function(e) {
 }
 .btn-photo:hover {
     background: #059669;
+}
+.admin-thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #10b981;
+    display: block;
+}
+.no-photo-badge {
+    display: inline-block;
+    background: #f3f4f6;
+    color: #9ca3af;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px dashed #d1d5db;
+    white-space: nowrap;
 }
 .photo-modal {
     position: fixed;

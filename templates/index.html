@@ -7,7 +7,7 @@
     <!-- Linha 1: Busca + Favoritos -->
     <div class="search-favorites-row">
         <div class="search-box-compact" style="flex: 1; max-width: 600px;">
-            <input type="text" id="searchInput" placeholder="Buscar produtos..." style="width: 100%; padding: 12px 15px; font-size: 16px;">
+            <input type="text" id="searchInput" placeholder="Buscar produtos...">
         </div>
         <div class="btn-filter-wrapper">
             <button class="btn-favorites-compact" id="btnFavorites" onclick="toggleFavoritesFilter()">
@@ -45,11 +45,63 @@
     <p>Nenhum produto encontrado</p>
 </div>
 
-<!-- Botão flutuante do carrinho -->
+<!-- Botão flutuante do carrinho (desktop) -->
 <button class="cart-float" id="cartButton" onclick="toggleCart()">
     <span class="cart-icon">🛒</span>
     <span class="cart-count" id="cartCount">0</span>
 </button>
+
+<!-- Bottom Navigation (mobile) -->
+<nav class="bottom-nav" id="bottomNav">
+    <div class="bottom-nav-items">
+        <button class="bottom-nav-item active" id="btnNavAll" onclick="showAllProducts()">
+            <span class="bottom-nav-icon">🏠</span>
+            <span>Todos</span>
+        </button>
+        <button class="bottom-nav-item" id="btnNavFav" onclick="toggleFavoritesFilter()">
+            <span class="bottom-nav-icon">⭐</span>
+            <span>Favoritos</span>
+            <span class="bottom-nav-badge" id="bottomFavBadge" style="display:none">0</span>
+        </button>
+        <button class="bottom-nav-item" id="btnNavPromo" onclick="toggleQueimaFilter()">
+            <span class="bottom-nav-icon">🔥</span>
+            <span>Promoções</span>
+        </button>
+        <button class="bottom-nav-item" id="btnNavCart" onclick="toggleCart()">
+            <span class="bottom-nav-icon">🛒</span>
+            <span>Carrinho</span>
+            <span class="bottom-nav-badge" id="bottomCartBadge" style="display:none">0</span>
+        </button>
+        <button class="bottom-nav-item" id="btnNavMenu" onclick="toggleBottomMenu()">
+            <span class="bottom-nav-icon">☰</span>
+            <span>Menu</span>
+        </button>
+    </div>
+</nav>
+
+<!-- Menu popup da bottom nav -->
+<div class="bottom-menu-popup" id="bottomMenuPopup" style="display:none">
+    <div class="bottom-menu-overlay" onclick="toggleBottomMenu()"></div>
+    <div class="bottom-menu-content">
+        <div class="bottom-menu-user">
+            <strong>{{ session.get('username', '') }}</strong>
+            {% if session.get('categoria_loja') %}
+            <span class="categoria-badge-inline">
+                {% if session.get('categoria_loja') == 'automotivo' %}🚗 Automotivo{% else %}🏠 Imobiliário{% endif %}
+            </span>
+            {% endif %}
+        </div>
+        <div class="bottom-menu-actions">
+            {% if session.get('categoria_loja') %}
+            <a href="{{ url_for('trocar_setor') }}" class="bottom-menu-btn">🔄 Trocar Setor</a>
+            {% endif %}
+            {% if session.get('is_admin') %}
+            <a href="{{ url_for('admin_dashboard') }}" class="bottom-menu-btn">⚙️ Administrador</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}" class="bottom-menu-btn danger">🚪 Sair</a>
+        </div>
+    </div>
+</div>
 
 <!-- Carrinho lateral -->
 <div class="cart-sidebar" id="cartSidebar">
@@ -161,14 +213,15 @@ function toggleQueimaFilter() {
     showingFavoritesOnly = false; // Desativar filtro de favoritos
     document.getElementById('btnQueima').style.opacity = showingQueimaOnly ? '1' : '0.6';
     document.getElementById('btnFavorites').style.opacity = '0.6';
-    
+
     // Limpar busca ao ativar filtro
     if (showingQueimaOnly) {
         document.getElementById('searchInput').value = '';
     }
-    
+
     currentPage = 1;
     filterAndDisplayProducts();
+    updateBottomNav();
 }
 
 // Busca com debounce para melhor performance
@@ -484,6 +537,8 @@ function createProductCard(product, index = 0) {
     const safeName = escapeHtml(product.name);
     const safeBrand = escapeHtml(product.brand);
     const loadingAttr = index < 8 ? 'eager' : 'lazy';
+    const fetchPriority = index < 4 ? 'fetchpriority="high"' : '';
+    const thumbUrl = product.image ? getThumbUrl(product.image) : null;
     const relatedBadge = product.isRelated ?
         `<div class="related-badge">🔗 Catalisador de ${escapeHtml(product.relatedTo)}</div>` : '';
     const queimaBadge = product.em_queima_estoque ?
@@ -497,8 +552,8 @@ function createProductCard(product, index = 0) {
                 ${isFavorite ? '⭐' : '☆'}
             </button>
             <div class="product-image" onclick="openModal(${product.id})">
-                ${product.image ?
-                    `<img src="${product.image}" loading="${loadingAttr}" decoding="async" alt="${product.name}" onload="this.classList.add('img-loaded');this.closest('.product-image').classList.add('loaded')" onerror="this.closest('.product-image').classList.add('loaded')">` :
+                ${thumbUrl ?
+                    `<img src="${thumbUrl}" loading="${loadingAttr}" decoding="async" ${fetchPriority} alt="${safeName}" onload="this.classList.add('img-loaded');this.closest('.product-image').classList.add('loaded')" onerror="this.src='${product.image}';this.closest('.product-image').classList.add('loaded')">` :
                     '<div class="no-image loaded">Sem imagem</div>'}
             </div>
             <div class="product-info">
@@ -548,6 +603,7 @@ function toggleFavorite(productId) {
 
 function updateFavoritesCount() {
     document.getElementById('favoritesCount').textContent = favorites.length;
+    updateBottomNav();
 }
 
 function toggleFavoritesFilter() {
@@ -564,6 +620,7 @@ function toggleFavoritesFilter() {
 
     currentPage = 1; // Resetar para primeira página
     filterAndDisplayProducts();
+    updateBottomNav();
 }
 
 function changeQty(productId, delta) {
@@ -598,6 +655,7 @@ function saveCart() {
 
 function updateCartDisplay() {
     saveCart();
+    updateBottomNav();
     const cartItems = document.getElementById('cartItems');
     const cartCount = document.getElementById('cartCount');
     const cartFooter = document.querySelector('.cart-footer');
@@ -737,6 +795,59 @@ window.onclick = function(event) {
     if (event.target === modal) {
         history.back();
     }
+}
+
+// ── Otimização de imagens ─────────────────────────────────────
+function getThumbUrl(url) {
+    if (!url) return null;
+    // Supabase Image Transform: converte object URL → render URL com resize
+    if (url.includes('/storage/v1/object/public/')) {
+        const transformed = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
+        return transformed + '?width=400&quality=75&resize=contain';
+    }
+    return url;
+}
+
+// ── Bottom Navigation ─────────────────────────────────────────
+function updateBottomNav() {
+    const totalItems = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
+    const cartBadge = document.getElementById('bottomCartBadge');
+    if (cartBadge) {
+        cartBadge.textContent = totalItems;
+        cartBadge.style.display = totalItems > 0 ? 'flex' : 'none';
+    }
+
+    const favBadge = document.getElementById('bottomFavBadge');
+    if (favBadge) {
+        favBadge.textContent = favorites.length;
+        favBadge.style.display = favorites.length > 0 ? 'flex' : 'none';
+    }
+
+    const btnAll = document.getElementById('btnNavAll');
+    const btnFav = document.getElementById('btnNavFav');
+    const btnPromo = document.getElementById('btnNavPromo');
+    if (btnAll) btnAll.classList.toggle('active', !showingFavoritesOnly && !showingQueimaOnly);
+    if (btnFav) {
+        btnFav.classList.toggle('active', showingFavoritesOnly);
+    }
+    if (btnPromo) {
+        btnPromo.classList.toggle('active-orange', showingQueimaOnly);
+        btnPromo.classList.toggle('active', false);
+    }
+}
+
+function showAllProducts() {
+    showingFavoritesOnly = false;
+    showingQueimaOnly = false;
+    document.getElementById('searchInput').value = '';
+    currentPage = 1;
+    filterAndDisplayProducts();
+    updateBottomNav();
+}
+
+function toggleBottomMenu() {
+    const popup = document.getElementById('bottomMenuPopup');
+    if (popup) popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
 }
 </script>
 
