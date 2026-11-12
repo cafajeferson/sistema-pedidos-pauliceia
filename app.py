@@ -278,6 +278,17 @@ def listar_meus_produtos():
         for m in itens
     ])
 
+@app.route('/api/meus-produtos/<int:product_id>', methods=['DELETE'])
+@login_required
+@categoria_required
+def remover_meu_produto(product_id):
+    """Cliente tira um produto de 'Meus produtos' (ex.: pediu errado). Volta se pedir de novo."""
+    MeuProduto.query.filter_by(
+        user_id=session['user_id'], categoria_loja=session['categoria_loja'], product_id=product_id
+    ).delete()
+    db.session.commit()
+    return jsonify({'success': True})
+
 @app.route('/api/historico', methods=['POST'])
 @login_required
 @categoria_required

@@ -3,7 +3,7 @@
 {% block title %}Catálogo de Produtos{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/shop.css') }}?v=2">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shop.css') }}?v=3">
 {% endblock %}
 
 {% block content %}
@@ -196,6 +196,28 @@ function updateMineCount() {
     const el = document.getElementById('mineCount');
     el.textContent = n;
     el.style.display = n > 0 ? 'flex' : 'none';
+}
+
+async function removeFromMine(productId) {
+    const p = productsById.get(productId);
+    const nome = p ? p.name : 'este produto';
+    if (!confirm(`Tirar "${nome}" de Meus produtos?\n\nSe você pedir de novo, ele volta para a lista.`)) return;
+
+    // Tira da tela na hora
+    const lista = [...mineOrder.keys()].filter(id => id !== productId)
+        .map(id => ({ id, vezes: boughtCount.get(id) }));
+    setMyProducts(lista);
+    render();
+
+    try {
+        const resp = await fetch(`/api/meus-produtos/${productId}`, { method: 'DELETE' });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        showToast('Produto tirado de Meus produtos');
+    } catch (e) {
+        console.error('Erro ao tirar de Meus produtos:', e);
+        showToast('Não deu para tirar agora. Tente de novo.');
+        loadMyProducts();
+    }
 }
 
 function saveOrderToHistory(itens) {
@@ -504,12 +526,15 @@ function createProductCard(product, index = 0) {
         `<div class="queima-badge">🔥 QUEIMA DE ESTOQUE 🔥</div>` : '';
     const times = boughtCount.get(product.id) || 0;
     const boughtBadge = times > 0 ? `<div class="bought-badge">✓ Pedido ${times}x</div>` : '';
+    const removeMineBtn = mode === 'mine' && times > 0 ?
+        `<button class="btn-remove-mine" onclick="removeFromMine(${product.id})" aria-label="Tirar de Meus produtos" title="Tirar de Meus produtos">×</button>` : '';
 
     return `
         <div class="product-card ${product.em_queima_estoque ? 'product-card-queima' : ''} ${currentQty > 0 ? 'in-cart' : ''}" data-id="${product.id}" data-name="${safeName}" data-brand="${safeBrand}">
             ${queimaBadge}
             ${relatedBadge}
             ${boughtBadge}
+            ${removeMineBtn}
             <div class="product-image" onclick="openModal(${product.id})">
                 ${thumbUrl ?
                     `<img src="${thumbUrl}" loading="${loadingAttr}" decoding="async" ${fetchPriority} alt="${safeName}" onload="this.classList.add('img-loaded');this.closest('.product-image').classList.add('loaded')" onerror="this.closest('.product-image').classList.add('loaded')">` :

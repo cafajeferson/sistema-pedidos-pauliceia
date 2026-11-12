@@ -220,6 +220,38 @@
     pointer-events: none;
 }
 
+/* × para tirar o produto de "Meus produtos" */
+.btn-remove-mine {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    z-index: 3;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(220, 38, 38, 0.92);
+    color: white;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.btn-remove-mine:active {
+    transform: scale(0.9);
+}
+
+/* Em produto de promoção, desce para não cobrir a faixa "Queima de estoque" */
+.product-card-queima .btn-remove-mine,
+.product-card-queima .bought-badge {
+    top: 44px;
+}
+
 .product-card.in-cart {
     outline: 2px solid var(--primary);
     outline-offset: -2px;
