@@ -32,8 +32,8 @@
         <span class="shop-shortcut-count" id="queimaCount" style="display:none">0</span>
     </button>
     <button class="shop-shortcut" data-mode="all" onclick="setMode('all')">
-        <span class="shop-shortcut-icon">🏷️</span>
-        <span>Todos</span>
+        <span class="shop-shortcut-icon">🛍️</span>
+        <span>Todos os produtos</span>
     </button>
 </div>
 
@@ -421,7 +421,7 @@ function filterAndDisplayProducts() {
         noResults.style.display = 'block';
         document.getElementById('noResultsText').textContent =
             inMine && !searchTerm ? 'Você ainda não fez pedidos. Os produtos que você pedir aparecem aqui.'
-            : inMine ? 'Nenhum dos seus produtos tem esse nome. Toque em "Todos" para buscar no catálogo inteiro.'
+            : inMine ? 'Nenhum dos seus produtos tem esse nome. Toque em "Todos os produtos" para buscar no catálogo inteiro.'
             : 'Nenhum produto encontrado';
         return;
     }
