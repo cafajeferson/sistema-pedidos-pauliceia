@@ -6,6 +6,7 @@ from functools import wraps
 from fuzzywuzzy import fuzz
 from supabase import create_client, Client
 import os
+import json
 from datetime import datetime
 import time
 import uuid
@@ -54,6 +55,35 @@ class Product(db.Model):
 class AdminConfig(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     whatsapp_number = db.Column(db.String(20), nullable=False)
+
+class HistoricoPedido(db.Model):
+    """Pedido enviado pelo cliente (via WhatsApp), guardado para 'Pedir de novo'."""
+    __tablename__ = 'historico_pedido'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    categoria_loja = db.Column(db.String(20), nullable=False, index=True)
+    itens = db.Column(db.Text, nullable=False)  # JSON: [{id, name, brand, qty}]
+    total_itens = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'itens': json.loads(self.itens or '[]'),
+            'total_itens': self.total_itens,
+            'created_at': self.created_at.isoformat() + 'Z',
+        }
+
+class MeuProduto(db.Model):
+    """Produtos que o cliente já pediu (um registro por produto, sem repetir)."""
+    __tablename__ = 'meu_produto'
+    __table_args__ = (db.UniqueConstraint('user_id', 'categoria_loja', 'product_id', name='uq_meu_produto'),)
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    categoria_loja = db.Column(db.String(20), nullable=False)
+    product_id = db.Column(db.Integer, nullable=False)
+    vezes = db.Column(db.Integer, default=1)  # em quantos pedidos apareceu
+    ultimo_pedido = db.Column(db.DateTime, default=datetime.utcnow)
 
 # Decoradores
 def login_required(f):
@@ -222,6 +252,95 @@ def get_whatsapp_config():
     if config:
         return jsonify({'number': config.whatsapp_number})
     return jsonify({'number': ''})
+
+HISTORICO_LIMITE = 30  # pedidos guardados por cliente/setor
+
+@app.route('/api/historico', methods=['GET'])
+@login_required
+@categoria_required
+def listar_historico():
+    """Últimos pedidos do cliente logado no setor atual."""
+    pedidos = HistoricoPedido.query.filter_by(
+        user_id=session['user_id'], categoria_loja=session['categoria_loja']
+    ).order_by(HistoricoPedido.created_at.desc()).limit(HISTORICO_LIMITE).all()
+    return jsonify([p.to_dict() for p in pedidos])
+
+@app.route('/api/meus-produtos', methods=['GET'])
+@login_required
+@categoria_required
+def listar_meus_produtos():
+    """Produtos que o cliente já pediu no setor atual, do mais recente para o mais antigo."""
+    itens = MeuProduto.query.filter_by(
+        user_id=session['user_id'], categoria_loja=session['categoria_loja']
+    ).order_by(MeuProduto.ultimo_pedido.desc()).all()
+    return jsonify([
+        {'id': m.product_id, 'vezes': m.vezes, 'ultimo_pedido': m.ultimo_pedido.isoformat() + 'Z'}
+        for m in itens
+    ])
+
+@app.route('/api/historico', methods=['POST'])
+@login_required
+@categoria_required
+def salvar_historico():
+    """Guarda o pedido que o cliente acabou de enviar pelo WhatsApp."""
+    dados = request.get_json(silent=True) or {}
+    itens = []
+    for item in (dados.get('itens') or [])[:200]:
+        try:
+            qty = int(item.get('qty', 0))
+            pid = int(item.get('id'))
+        except (TypeError, ValueError, AttributeError):
+            continue
+        if qty <= 0:
+            continue
+        itens.append({
+            'id': pid,
+            'name': str(item.get('name', ''))[:200],
+            'brand': str(item.get('brand', ''))[:100],
+            'qty': min(qty, 9999),
+        })
+    if not itens:
+        return jsonify({'success': False, 'error': 'Pedido vazio'}), 400
+
+    pedido = HistoricoPedido(
+        user_id=session['user_id'],
+        categoria_loja=session['categoria_loja'],
+        itens=json.dumps(itens, ensure_ascii=False),
+        total_itens=sum(i['qty'] for i in itens),
+    )
+    db.session.add(pedido)
+
+    # Atualiza "Meus produtos": produto novo entra, produto repetido só atualiza a data
+    agora = datetime.utcnow()
+    ids = {i['id'] for i in itens}
+    existentes = {
+        m.product_id: m for m in MeuProduto.query.filter(
+            MeuProduto.user_id == session['user_id'],
+            MeuProduto.categoria_loja == session['categoria_loja'],
+            MeuProduto.product_id.in_(ids),
+        ).all()
+    }
+    for pid in ids:
+        if pid in existentes:
+            existentes[pid].vezes = (existentes[pid].vezes or 0) + 1
+            existentes[pid].ultimo_pedido = agora
+        else:
+            db.session.add(MeuProduto(
+                user_id=session['user_id'], categoria_loja=session['categoria_loja'],
+                product_id=pid, vezes=1, ultimo_pedido=agora,
+            ))
+    db.session.commit()
+
+    # Histórico: mantém só os mais recentes
+    antigos = HistoricoPedido.query.filter_by(
+        user_id=session['user_id'], categoria_loja=session['categoria_loja']
+    ).order_by(HistoricoPedido.created_at.desc()).offset(HISTORICO_LIMITE).all()
+    for p in antigos:
+        db.session.delete(p)
+    if antigos:
+        db.session.commit()
+
+    return jsonify({'success': True, 'pedido': pedido.to_dict()})
 
 @app.route('/api/search-products')
 @admin_required
@@ -558,6 +677,8 @@ def admin_delete_user(id):
         flash('Não é possível excluir administradores!', 'danger')
         return redirect(url_for('admin_users'))
 
+    HistoricoPedido.query.filter_by(user_id=user.id).delete()
+    MeuProduto.query.filter_by(user_id=user.id).delete()
     db.session.delete(user)
     db.session.commit()
 
